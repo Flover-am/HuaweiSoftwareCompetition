@@ -3,4 +3,4 @@ project(HuaweiSoftwareCompetition)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(HuaweiSoftwareCompetition main.cpp)
+add_executable(HuaweiSoftwareCompetition main.cpp Include/test.h Source/test.cpp)
