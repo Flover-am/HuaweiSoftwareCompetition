@@ -8,11 +8,18 @@
 
 class robot {
 public:
-    float palstance;
-    float lineSpeed_X;
-    float lineSpeed_Y;
+    //角速度
+    float angle_v{};
+    //线速度
+    float line_v_x{};
+    float line_v_y{};
+    //位置
+    float position_x{};
+    float position_y{};
 
+    robot(float, float);
 
+    robot();
 };
 
 
