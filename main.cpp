@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
-#include <fstream>
 
 #include "robot.h"
 #include "workStation.h"
+#include "Logger.h"
 
 using namespace std;
 
@@ -20,7 +20,8 @@ bool readUntilOK() {
 
 void init_map(vector<robot> &robots, vector<workStation> &workStations);
 
-string mapFileName = "1.txt";
+Logger logger = *new Logger();
+
 
 int main() {
     // 与判题器握手
@@ -39,8 +40,8 @@ int main() {
     while (scanf("%d", &frameID) != EOF) {
         readUntilOK();
         printf("%d\n", frameID);
-        int lineSpeed = 1;
-        double angleSpeed = 1;
+        int lineSpeed = 2;
+        double angleSpeed = 2;
         for (int robotId = 0; robotId < 4; robotId++) {
             printf("forward %d %d\n", robotId, lineSpeed);
             printf("rotate %d %f\n", robotId, angleSpeed);
@@ -57,7 +58,7 @@ void init_map(vector<robot> &robots, vector<workStation> &workStations) {
     for (int i = 0; i < 100; ++i) {
         for (int j = 0; j < 100; ++j) {
             cin >> symbol;
-
+//            logger.write_log(to_string(symbol));
             if (symbol == '.') {
                 continue;
             }
@@ -65,7 +66,7 @@ void init_map(vector<robot> &robots, vector<workStation> &workStations) {
                 robots[robot_now] = robot(j + 0.25f, 100 - (i + 0.25f));
                 robot_now++;
                 if (robot_now > 4) {
-                    cerr << "机器人数量超限/robot to many" << endl;
+                    logger.write_log("1");
                 }
             } else if (isdigit(symbol) != 0) {
                 workStations.emplace_back(j + 0.25f, 100 - (i + 0.25f));
