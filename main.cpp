@@ -20,7 +20,7 @@ bool readUntilOK() {
 
 void init_map(vector<robot> &robots, vector<workStation> &workStations);
 
-string mapFileName = "maps/1.txt";
+string mapFileName = "1.txt";
 
 int main() {
     // 与判题器握手
@@ -39,8 +39,8 @@ int main() {
     while (scanf("%d", &frameID) != EOF) {
         readUntilOK();
         printf("%d\n", frameID);
-        int lineSpeed = 2;
-        double angleSpeed = 0;
+        int lineSpeed = 1;
+        double angleSpeed = 1;
         for (int robotId = 0; robotId < 4; robotId++) {
             printf("forward %d %d\n", robotId, lineSpeed);
             printf("rotate %d %f\n", robotId, angleSpeed);
@@ -52,12 +52,12 @@ int main() {
 }
 
 void init_map(vector<robot> &robots, vector<workStation> &workStations) {
-    fstream file(mapFileName);
-    char symbol = ' ';
+    char symbol;
     int robot_now = 0;
     for (int i = 0; i < 100; ++i) {
         for (int j = 0; j < 100; ++j) {
-            file >> symbol;
+            cin >> symbol;
+
             if (symbol == '.') {
                 continue;
             }
@@ -72,4 +72,5 @@ void init_map(vector<robot> &robots, vector<workStation> &workStations) {
             }
         }
     }
+    cin >> ws;
 }
