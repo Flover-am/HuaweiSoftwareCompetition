@@ -1,25 +1,25 @@
-//
-// Created by 24873 on 2023/3/14.
-//
-
 #ifndef HUAWEISOFTWARECOMPETITION_ROBOT_H
 #define HUAWEISOFTWARECOMPETITION_ROBOT_H
 
 
 class robot {
 public:
-    int id;
-    //角速度
-    float angle_v{};
-    //线速度
-    float line_v_x{};
-    float line_v_y{};
-    //位置
-    float position_x{};
-    float position_y{};
+    int id{-1};
+    int stationID{-1};
+    int item{0};
+
+    float tValue{0}; // timeValue
+    float hValue{0}; // hitValue
+
+    float angleV{0};
+    float lineVX{0};
+    float lineVY{0};
+
+    float direction{0};
+    float positionX;
+    float positionY;
 
     robot(int, float, float);
-
     robot();
 };
 

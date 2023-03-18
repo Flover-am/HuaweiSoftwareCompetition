@@ -7,6 +7,9 @@
 #include "Logger.h"
 #include "dataTable.h"
 
+#define X_POS (j+0.25f)
+#define Y_POS (100-(i+0.25f))
+
 using namespace std;
 
 // 储存数据的工具：包括frame，money，robot，workstation
@@ -19,16 +22,11 @@ vector<workStation> dataTable::workStations;
 Logger logger = *new Logger(false);
 
 
-// 初始化地图
 void init_map();
-
-// 读取每一帧的数据
-bool readMessage();
+void readMessage();
 
 int main() {
 
-
-    // 与判题器握手
     init_map();
     puts("OK");
     fflush(stdout);
@@ -36,62 +34,64 @@ int main() {
     dataTable::frame = 1;
     dataTable::money = 200000;
 
-    while (readMessage()) {
+    for (int i = 0; i < 9000; ++i) {
+        readMessage();
+        std::printf("%d\n", dataTable::frame++);
+        //TODO: Commands.
+//        需要实现的方法：
+//        1. 机器人从当前位置寻路至指定工作台。
+//        2. 计算距离每个机器人最近的可用的工作台。
+//        3. 在机器人到达指定工作台后，进行操作。
 
-        printf("%d\n", dataTable::frame++);
-        float lineSpeed = 6;
-        float angleSpeed = 1;
-        for (int robotId = 0; robotId < 4; robotId++) {
-            printf("forward %f %f\n", robotId, lineSpeed);
-            printf("rotate %f %f\n", robotId, angleSpeed);
-        }
-        printf("OK\n");
+        puts("OK");
         fflush(stdout);
     }
     return 0;
 }
 
 void init_map() {
-    char symbol;
-    int robot_now = 0;
-    int worStation_now = 0;
+    int robot = 0, workStation = 0;
     string line;
-    int i = 0;
-    while (getline(cin, line)) {
 
-        if (line[0] == 'O' && line[1] == 'K') {
+    for (int i = 0; getline(cin, line); i++) {
+        if (line == "OK")
             return;
-        }
+
         for (int j = 0; j < 100; ++j) {
-            symbol = line[j];
-            if (symbol == '.') {
-                continue;
-            }
-            if (symbol == 'A') {
-                dataTable::robots.emplace_back(robot_now++, j + 0.25f, 100 - (i + 0.25f));
-                if (robot_now > 4) {
-                    logger.write_error("robot less than 4 ???");
-                }
-            } else if (isdigit(symbol) != 0) {
-                dataTable::workStations.emplace_back(symbol - 48, worStation_now++, j + 0.25f, 100 - (i + 0.25f));
-            }
+            char symbol = line[j];
+
+            if (symbol == 'A')
+                dataTable::robots.emplace_back(robot++, X_POS, Y_POS);
+            else if (isdigit(symbol))
+                dataTable::workStations.emplace_back(symbol-48, workStation++, X_POS, Y_POS);
         }
-        i++;
     }
     cin >> ws;
 }
-
-bool readMessage() {
+void readMessage() {
     string line;
     getline(cin, line);
     stringstream ss(line);
-    // 读取第一行
-    ss >> dataTable::frame >> dataTable::money >> ws;
-    // 屏蔽第二行
+    ss >> dataTable::frame >> dataTable::money;
     getline(cin, line);
+
     int skip = 0;
-    for (int i = 0; i < dataTable::workStations.size(); ++i) {
-        int a = 1;
-        //TODO: 每帧数据更新
+    for (auto &s : dataTable::workStations) {
+        int number;
+        getline(cin, line);
+        ss.clear(); ss.str(line);
+        ss >> skip >> skip >> skip;
+        ss >> s.timeRemain >> number >> s.proState;
+        for (auto &state : s.matState){
+            state = number%2;
+            number /= 2;
+        }
     }
+    for (auto &r : dataTable::robots) {
+        getline(cin, line);
+        ss.clear(); ss.str(line);
+        ss >> r.stationID >> r.item >> r.tValue >> r.hValue;
+        ss >> r.angleV >> r.lineVX >> r.lineVY >> r.direction >> r.positionX >> r.positionY;
+    }
+    getline(cin, line);
 }

@@ -1,7 +1,3 @@
-//
-// Created by 18466 on 2023/3/16.
-//
-
 #include <fstream>
 #include "Logger.h"
 #include <iostream>

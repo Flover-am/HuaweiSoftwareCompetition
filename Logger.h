@@ -1,7 +1,3 @@
-//
-// Created by 18466 on 2023/3/16.
-//
-
 #ifndef CODECRAFTSDK_LOGGER_H
 #define CODECRAFTSDK_LOGGER_H
 
