@@ -15,15 +15,19 @@ public:
     const float position_x;
     const float position_y;
 
-    std::vector<int> buy_list;
     // TODO: 待加入其他工作台元素
-    int sell_material{0};
+
     int frame_need{0};
-    float frame2finished{0};
+    int frame2finished{0};
+    // 第一位表示原材料种类，第二位表示原材料状态
+    std::vector<std::vector<int>> raw_carried_status;
+    // 同理
+    std::vector<int> sell_carried_status;
 
     workStation(int, int, float, float);
 
     workStation();
+
     // TODO：数据更新
     void refresh();
 
