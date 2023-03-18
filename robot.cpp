@@ -4,7 +4,8 @@
 
 #include "robot.h"
 
-robot::robot(float x, float y) {
+robot::robot(int _id, float x, float y) {
+    this->id = _id;
     this->position_x = x;
     this->position_y = y;
 }

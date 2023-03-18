@@ -8,6 +8,7 @@
 
 class robot {
 public:
+    int id;
     //角速度
     float angle_v{};
     //线速度
@@ -17,7 +18,7 @@ public:
     float position_x{};
     float position_y{};
 
-    robot(float, float);
+    robot(int, float, float);
 
     robot();
 };

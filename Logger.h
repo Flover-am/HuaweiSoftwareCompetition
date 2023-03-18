@@ -12,9 +12,16 @@ using namespace std;
 class Logger {
 private:
     string logger_file;
+
+    void write_log(const string &, bool= false);
+
 public:
-    Logger();
-    void write_log(const string&, bool= false);
+    Logger(bool is_append);
+
+    void write_info(const string &, bool= false);
+
+    void write_error(const string &, bool= false);
+
 };
 
 
