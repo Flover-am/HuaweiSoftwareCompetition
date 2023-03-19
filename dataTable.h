@@ -11,17 +11,26 @@
 #define ROBOT_NUM 4
 #define FRAME_NUM 9000
 #define START_MONEY 200000
+#define PAI 3.14159
+#define VALID_DISTANCE 0.4f
+#define FRAMES_PER_S 50
+#define TIME_PER_FRAME 0.02f
+#define V_MAX 6.0f
+#define OMEGA_MAX PAI
+
 
 using namespace std;
 
 class dataTable {
 public:
     int a;
-    static array<int, ROBOT_NUM> destList; //各个机器人的目的地
+    static array<bool, ROBOT_NUM> needRotate;           //是否需要在行进中旋转
+    static array<int, ROBOT_NUM> destList;  //各个机器人的目的地
     static int frame;
     static int money;
     static vector<robot> robots;
     static vector<workStation> workStations;
+
 
     dataTable(int);
 };
