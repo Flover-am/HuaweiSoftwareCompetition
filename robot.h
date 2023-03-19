@@ -4,7 +4,7 @@
 
 class robot {
 public:
-    int id{-1};
+    int ID{-1};
     int stationID{-1};
     int item{0};
 

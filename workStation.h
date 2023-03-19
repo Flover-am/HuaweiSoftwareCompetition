@@ -10,8 +10,8 @@ class workStation {
 public:
     int id{};
     int type{1};
-    const float position_x{0.0f};
-    const float position_y{0.0f};
+    const float positionX{0.0f};
+    const float positionY{0.0f};
 
     int matState[7]{0,0,0,0,0,0,0}; // matState[i] == 1: i号原料格占用
     int proState{0};                // proState == 1: 产品格占用
