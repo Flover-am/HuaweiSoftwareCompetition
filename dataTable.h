@@ -7,10 +7,9 @@
 #include "workStation.h"
 
 #define PAI 3.14159f
-#define X_POS (j+0.25f)
-#define Y_POS (100-(i+0.25f))
 
-#define MAP_SIZE 50
+#define TILE_NUM 100
+#define TILE_SIZE 0.5
 #define ROBOT_NUM 4
 #define FRAME_NUM 9000
 #define START_MONEY 200000

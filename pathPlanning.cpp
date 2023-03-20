@@ -3,80 +3,66 @@
 void setDestination(){
     // 存放所有可能路径，pair.first: workStation号码 pair.second: 一个代表距离/时间等等的变量，用来判定
     array<vector<pair<int, float>>, ROBOT_NUM> paths;
-    for(int i = 0; i < ROBOT_NUM; ++i){
-        if (dataTable::destList[i] < 0){     //  如果没有Destination
-            vector<int> destinations = findStation(i);
-            for (int &newD : destinations){
-                float value = calculate(i, newD);
-                pair<int, float> path(newD, value);
-                paths[i].emplace_back(path);
-            }
-        }
-    }
+    for (int i = 0; i < ROBOT_NUM; ++i)
+        if (dataTable::destList[i] < 0){
+            paths[i] = findStation(i);
+            sort(paths[i].begin(), paths[i].end(), [](auto &a, auto &b) {return a.second<b.second;});
+        }   //  如果没有Destination
 
-    int index = 0;
-    for (auto &i : paths){
-        sort(i.begin(), i.end(), [](auto &a, auto &b) {return a.second<b.second;});               // 将每组可能的解按值升序排列
-        for (auto &path : i){
-            if (count(dataTable::destList.begin(), dataTable::destList.end(), path.first) == 0){  // 如果这个终点没有被其他机器人占用
-                dataTable::destList[index++] = path.first;
+    for (int i = 0; i < ROBOT_NUM; ++i){
+        if (paths[i].empty())
+            continue;
+
+        for (auto &path : paths[i]){
+            if (count(dataTable::destList.begin(), dataTable::destList.end(), path.first) == 0) {       // 如果这个终点没有被其他机器人占用
+                dataTable::destList[i] = path.first;
                 break;
             }
         }
     }
     // TODO: 算法待优化，下面是我的还没有写完（没思路了）
     // TODO: 还需要考虑物品售价以及制作
-    /*vector<array<pair<int, float>, 4>> solutions; // 存放所有可能的解法
-    int x = min_element(paths.begin(), paths.end(),
-                [](auto &a, auto &b)
-                {return b.size()==0||(a.size()!=0&&a.size()<b.size());}
-            )-paths.begin();                      // 寻找可能的路径最少的机器人编号
-    for (int i = 0; i < paths[x].size(); ++i){    // 建立每种可能的解法
-        array<pair<int, float>, 4> path;
-        path[0]= paths[x][i];
-        solutions.push_back(path);
-    }*/
 }
-vector<int> findStation(int RID) { //寻找可能的目的地
+
+vector<pair<int, float>> findStation(int RID) { //寻找可能的目的地
     robot &r = dataTable::robots[RID];
-    vector<int> stations;
+    vector<pair<int, float>> stations;
     if (r.item == 0){
         for(auto &s : dataTable::workStations)
-            if (s.proState == 1 || s.timeRemain != -1)                      // 如果工作台生产商品
-                stations.emplace_back(s.id);
+            if (s.proState == 1 || s.timeRemain != -1)                      // 如果机器人空闲，寻找可以生产商品的工作台
+                stations.emplace_back(s.id, calculate(RID, s.id));
     }
     else{
         for(auto &s : dataTable::workStations)
-            if (identify(s.type, r.item) && s.matState[r.item] == 0)        // 如果工作台需要原料
-                stations.emplace_back(s.id);
+            if (identify(r.item, s.type) && s.matState[r.item] == 0)        // 如果机器人载物，寻找需要原料的工作台
+                stations.emplace_back(s.id, calculate(RID, s.id));
     }
     // TODO: 算法优化
     return stations;
 }
-bool identify(int sType, int iType){
-    if (sType == 1 || sType == 2 || sType == 3)
-        return false;
-    else if (sType == 4){
-        if (iType == 1 || iType == 2)
+bool identify(int iType, int sType){
+
+    if (iType == 1){
+        if (sType == 4 || sType == 5 || sType == 9)
             return true;
     }
-    else if (sType == 5){
-        if (iType == 1 || iType == 3)
+    else if (iType == 2){
+        if (sType == 4 || sType == 6 || sType == 9)
             return true;
     }
-    else if (sType == 6){
-        if (iType == 2 || iType == 3)
+    else if (iType == 3){
+        if (sType == 5 || sType == 6 || sType == 9)
             return true;
     }
-    else if (sType == 7){
-        if (iType == 4 || iType == 5 || iType == 6)
+    else if (iType == 4 || iType == 5 || iType == 6){
+        if (sType == 7 || sType == 9)
             return true;
     }
-    else if (sType == 8){
-        if (iType == 7)
+    else if (iType == 7){
+        if (sType == 8 || sType == 9)
             return true;
     }
-    return true;
+    return false;
 }
 float calculate(int RID, int SID){
     robot &r = dataTable::robots[RID];

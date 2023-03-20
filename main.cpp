@@ -13,7 +13,6 @@
 #include "exchange.h"
 
 using namespace std;
-
 // 储存数据的工具：包括frame，money，robot，workstation
 int dataTable::frame;
 int dataTable::money;
@@ -41,16 +40,15 @@ int main() {
         printf("%d\n", dataTable::frame++);
 
         for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且已经抵达,进行买卖命令
-            if (dataTable::destList[j] >= 0)
-                if (dataTable::destList[j] == dataTable::robots[j].stationID)
-                    exchange(j, dataTable::destList[j]);
+            if (dataTable::destList[j] >= 0 && dataTable::destList[j] == dataTable::robots[j].stationID)
+                exchange(j, dataTable::destList[j]);
         for (int j = 0; j < ROBOT_NUM; ++j)
             if (dataTable::destList[j] < 0) {   //  如果没有Destination,规划下一步动作
                 setDestination();
                 break;
             }
         for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且尚未抵达,进行移动命令
-            if (dataTable::robots[j].stationID != dataTable::destList[j])
+            if (dataTable::destList[j] >= 0 && dataTable::robots[j].stationID != dataTable::destList[j])
                 navigate(j, dataTable::destList[j]);
 
         puts("OK");
@@ -72,13 +70,14 @@ void initMap() {
             if (symbol == '.')
                 continue;
 
+            float posX = (j+1.0f)*TILE_SIZE, posY = (TILE_NUM-i)*TILE_SIZE;
             if (symbol == 'A'){
-                dataTable::robots.emplace_back(robot++, X_POS, Y_POS);
+                dataTable::robots.emplace_back(robot++, posX, posY);
                 if (robot > ROBOT_NUM)
                     logger.writeError("Robot more than 4.", true);
             }
             else if (isdigit(symbol))
-                dataTable::workStations.emplace_back(symbol-48, workStation++, X_POS, Y_POS);
+                dataTable::workStations.emplace_back(symbol-48, workStation++, posX, posY);
         }
     }
     cin >> ws;

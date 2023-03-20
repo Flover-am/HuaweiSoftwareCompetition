@@ -8,7 +8,7 @@
 
 // 规划路线的函数
 void setDestination();
-vector<int> findStation(int);
+vector<pair<int, float>> findStation(int);
 bool identify(int, int);
 float calculate(int, int);
 
