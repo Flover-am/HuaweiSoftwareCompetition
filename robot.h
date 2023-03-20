@@ -1,7 +1,6 @@
 #ifndef HUAWEISOFTWARECOMPETITION_ROBOT_H
 #define HUAWEISOFTWARECOMPETITION_ROBOT_H
 
-
 class robot {
 public:
     int ID{-1};
@@ -22,6 +21,5 @@ public:
     robot(int, float, float);
     robot();
 };
-
 
 #endif //HUAWEISOFTWARECOMPETITION_ROBOT_H

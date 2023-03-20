@@ -47,7 +47,7 @@ material::material(int _type) {
             raw_materials.emplace_back(6);
             break;
         default:
-            logger.write_error("Unknown item.");
+            logger.writeError("Unknown item.", true);
     }
     currentPrice = (float)sellPrice;
 }

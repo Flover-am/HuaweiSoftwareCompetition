@@ -1,6 +1,6 @@
 #include <fstream>
-#include "Logger.h"
 #include <iostream>
+#include "Logger.h"
 
 Logger::Logger(bool is_append) {
     this->logger_file = "z_out.log";
@@ -25,17 +25,15 @@ Logger::Logger(bool is_append) {
     }
 }
 
-void Logger::write_info(const string &in_message, bool mod) {
+void Logger::writeInfo(const string &in_message, bool mod) {
     string message = "INFO: " + in_message;
-    write_log(message, mod);
+    writeLog(message, mod);
 }
-
-void Logger::write_error(const string &in_message, bool mod) {
+void Logger::writeError(const string &in_message, bool mod) {
     string message = "ERROR:!!  " + in_message;
-    write_log(message, mod);
+    writeLog(message, mod);
 }
-
-void Logger::write_log(const string &message, bool mod) {
+void Logger::writeLog(const string &message, bool mod) {
     if (mod) {
         ofstream out(this->logger_file, ios::out);
         if (!out) {

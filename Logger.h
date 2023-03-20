@@ -9,16 +9,13 @@ class Logger {
 private:
     string logger_file;
 
-    void write_log(const string &, bool= false);
+    void writeLog(const string &message, bool mod);
 
 public:
     Logger(bool is_append);
 
-    void write_info(const string &, bool= false);
-
-    void write_error(const string &, bool= false);
-
+    void writeInfo(const string &in_message, bool mod);
+    void writeError(const string &in_message, bool mod);
 };
-
 
 #endif //CODECRAFTSDK_LOGGER_H

@@ -1,7 +1,6 @@
 #ifndef CODECRAFTSDK_MATERIAL_H
 #define CODECRAFTSDK_MATERIAL_H
 
-
 #include <vector>
 
 class material {
@@ -16,6 +15,5 @@ public:
     material();
     explicit material(int);
 };
-
 
 #endif //CODECRAFTSDK_MATERIAL_H

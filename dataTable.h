@@ -19,7 +19,6 @@
 #define MAP_SIZE 50
 #define VALID_DISTANCE 0.4f
 
-
 using namespace std;
 
 class dataTable {
