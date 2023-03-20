@@ -19,10 +19,11 @@ void setDestination(int RID) {
         for (int count = 0; count < size; ++count) {
             // 确定当前步骤，机器人携带的物品号
             int item = 0;
-            if (paths[0].first[stepNum].second == ONLY_BUY)
-                item = data::workStations[paths[0].first[stepNum].first].type;
             if (stepNum == 0)
                 item = r.item;
+            else if (paths[0].first[stepNum-1].second == ONLY_BUY)
+                item = data::workStations[paths[0].first[stepNum-1].first].type;
+
             // 寻找新的步骤
             auto steps = findStation(item);
             auto incompletePath = paths[0];                 // 上一段循环得到的不完整的路径
@@ -111,7 +112,7 @@ deque<pair<int, int>> findStation(int item){
                     stations.emplace_back(s.id, ONLY_SELL);
                 else
                     stations.emplace_back(s.id, item);
-                //TODO: r.item与robot中定义的宏相对应，可用于其它机器人调用查看行动是否冲突
+                //TODO: r.item与robot中定义的宏相对应，需用于其它机器人调用查看行动是否冲突
             }
 
     }
