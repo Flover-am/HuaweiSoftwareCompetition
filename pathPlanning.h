@@ -7,7 +7,7 @@
 #include "dataTable.h"
 
 // 规划路线的函数
-void setDestination();
+void setDestination(int);
 vector<pair<int, float>> findStation(int);
 bool identify(int, int);
 float calculate(int, int);

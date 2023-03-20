@@ -2,6 +2,7 @@
 #define CODECRAFTSDK_EXCHANGE_H
 
 #include "dataTable.h"
+#include "pathPlanning.h"
 
 void exchange(int, int);
 

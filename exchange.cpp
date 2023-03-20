@@ -9,7 +9,7 @@ void exchange(int RID, int SID){
         printf("sell %d\n", RID);   // 如果可卖，则卖出物品
         success = true;
     }
-    if (success || (r.item == 0 && s.proState == 1)){
+    if ((success || r.item == 0) && s.proState == 1){
         printf("buy %d\n", RID);    // 如果可买，则购进原料
         success = true;
     }

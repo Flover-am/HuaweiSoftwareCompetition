@@ -39,17 +39,16 @@ int main() {
         readMessage();
         printf("%d\n", dataTable::frame++);
 
-        for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且已经抵达,进行买卖命令
-            if (dataTable::destList[j] >= 0 && dataTable::destList[j] == dataTable::robots[j].stationID)
-                exchange(j, dataTable::destList[j]);
         for (int j = 0; j < ROBOT_NUM; ++j)
-            if (dataTable::destList[j] < 0) {   //  如果没有Destination,规划下一步动作
-                setDestination();
-                break;
+            if (dataTable::destList[j] < 0)     //  如果没有Destination,规划下一步动作
+                setDestination(j);
+        for (int j = 0; j < ROBOT_NUM; ++j)
+            if (dataTable::destList[j] >= 0){
+                if (dataTable::destList[j] == dataTable::robots[j].stationID)   // 如果有Destination且已经抵达,进行买卖命令
+                    exchange(j, dataTable::destList[j]);
+                if (dataTable::destList[j] != dataTable::robots[j].stationID)   // 如果有Destination且尚未抵达,进行移动命令
+                    navigate(j, dataTable::destList[j]);
             }
-        for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且尚未抵达,进行移动命令
-            if (dataTable::destList[j] >= 0 && dataTable::robots[j].stationID != dataTable::destList[j])
-                navigate(j, dataTable::destList[j]);
 
         puts("OK");
         fflush(stdout);
@@ -70,7 +69,7 @@ void initMap() {
             if (symbol == '.')
                 continue;
 
-            float posX = (j+1.0f)*TILE_SIZE, posY = (TILE_NUM-i)*TILE_SIZE;
+            float posX = (j+0.5)*TILE_SIZE, posY = (TILE_NUM-i-0.5)*TILE_SIZE;
             if (symbol == 'A'){
                 dataTable::robots.emplace_back(robot++, posX, posY);
                 if (robot > ROBOT_NUM)

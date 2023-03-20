@@ -1,23 +1,14 @@
 #include "pathPlanning.h"
 
-void setDestination(){
+void setDestination(int RID){
     // 存放所有可能路径，pair.first: workStation号码 pair.second: 一个代表距离/时间等等的变量，用来判定
-    array<vector<pair<int, float>>, ROBOT_NUM> paths;
-    for (int i = 0; i < ROBOT_NUM; ++i)
-        if (dataTable::destList[i] < 0){
-            paths[i] = findStation(i);
-            sort(paths[i].begin(), paths[i].end(), [](auto &a, auto &b) {return a.second<b.second;});
-        }   //  如果没有Destination
+    vector<pair<int, float>> paths = findStation(RID);
+    sort(paths.begin(), paths.end(), [](auto &a, auto &b) {return a.second<b.second;});
 
-    for (int i = 0; i < ROBOT_NUM; ++i){
-        if (paths[i].empty())
-            continue;
-
-        for (auto &path : paths[i]){
-            if (count(dataTable::destList.begin(), dataTable::destList.end(), path.first) == 0) {       // 如果这个终点没有被其他机器人占用
-                dataTable::destList[i] = path.first;
-                break;
-            }
+    for (auto &path : paths){
+        if (count(dataTable::destList.begin(), dataTable::destList.end(), path.first) == 0) {       // 如果这个终点没有被其他机器人占用
+            dataTable::destList[RID] = path.first;
+            break;
         }
     }
     // TODO: 算法待优化，下面是我的还没有写完（没思路了）
@@ -34,7 +25,7 @@ vector<pair<int, float>> findStation(int RID) { //寻找可能的目的地
     }
     else{
         for(auto &s : dataTable::workStations)
-            if (identify(r.item, s.type) && s.matState[r.item] == 0)        // 如果机器人载物，寻找需要原料的工作台
+            if (identify(r.item, s.type) && (s.matState[r.item] == 0 || s.timeRemain != -1))        // 如果机器人载物，寻找需要原料的工作台
                 stations.emplace_back(s.id, calculate(RID, s.id));
     }
     // TODO: 算法优化
