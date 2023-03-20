@@ -15,7 +15,7 @@
 #define TIME_PER_FRAME 0.02f
 #define VALID_DISTANCE 0.4f
 
-#define PLAN_DEPTH 2
+#define STEP_DEPTH 2
 
 using namespace std;
 
@@ -25,7 +25,8 @@ public:
     static int money;
     static vector<robot> robots;
     static vector<workStation> workStations;
-    static pair<int, int> destList[ROBOT_NUM][PLAN_DEPTH];    //各个机器人的目的地, 以及它们即将进行的操作
+    static array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> destList;
+    // 存放所有路径，int1.workStation号码 int2.对应操作
 };
 
 #endif //CODECRAFTSDK_DATA_H

@@ -12,6 +12,7 @@
 #define A_BIG 14.16473f
 #define ALPHA_BIG 20.17050f
 
+//操作编号，对应商品编号
 #define ONLY_BUY 0
 #define PROD_SELL_1 1
 #define PROD_SELL_2 2

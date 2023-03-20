@@ -18,7 +18,7 @@ int data::frame;
 int data::money;
 vector<robot> data::robots;
 vector<workStation> data::workStations;
-pair<int, int> data::destList[ROBOT_NUM][PLAN_DEPTH];
+array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> data::destList;
 
 // Logger：日志工具
 Logger logger = *new Logger(false);
@@ -35,7 +35,7 @@ int main() {
     data::frame = 1;
     data::money = START_MONEY;
     for (int i = 0; i < ROBOT_NUM; ++i)
-        for (int j = 0; j < PLAN_DEPTH; ++j) {
+        for (int j = 0; j < STEP_DEPTH; ++j) {
             pair<int, int> element(-1, -1);
             data::destList[i][j] = element;
         }
@@ -45,7 +45,7 @@ int main() {
         printf("%d\n", data::frame++);
 
         for (int j = 0; j < ROBOT_NUM; ++j)
-            if (data::destList[j][PLAN_DEPTH-1].first < 0)      //  如果规划不完全，准备规划路线
+            if (data::destList[j][STEP_DEPTH-1].first < 0)      //  如果规划不完全，准备规划路线
                 setDestination(j);
         for (int j = 0; j < ROBOT_NUM; ++j)
             if (data::destList[j][0].first >= 0){               //  如果有下一步规划，准备行动
