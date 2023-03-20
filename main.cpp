@@ -19,13 +19,14 @@ int dataTable::frame;
 int dataTable::money;
 vector<robot> dataTable::robots;
 vector<workStation> dataTable::workStations;
-array<int,  4> dataTable::destList{-1,-1,-1,-1};
-array<bool, 4> dataTable::needRotate{true,true,true,true};
+array<int, 4> dataTable::destList{-1, -1, -1, -1};
+array<bool, 4> dataTable::needRotate{true, true, true, true};
 
 // Logger：日志工具
 Logger logger = *new Logger(false);
 
 void initMap();
+
 void readMessage();
 
 int main() {
@@ -53,7 +54,7 @@ int main() {
         }
         for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且尚未抵达,进行移动命令
             if (dataTable::robots[j].stationID != dataTable::destList[j])
-                    navigate(j, dataTable::destList[j]);
+                navigate(j, dataTable::destList[j]);
 
         puts("OK");
         fflush(stdout);
@@ -74,17 +75,17 @@ void initMap() {
             if (symbol == '.')
                 continue;
 
-            if (symbol == 'A'){
+            if (symbol == 'A') {
                 dataTable::robots.emplace_back(robot++, X_POS, Y_POS);
                 if (robot > ROBOT_NUM)
                     logger.writeError("Robot more than 4.", true);
-            }
-            else if (isdigit(symbol))
-                dataTable::workStations.emplace_back(symbol-48, workStation++, X_POS, Y_POS);
+            } else if (isdigit(symbol))
+                dataTable::workStations.emplace_back(symbol - 48, workStation++, X_POS, Y_POS);
         }
     }
     cin >> ws;
 }
+
 void readMessage() {
     string line;
     getline(cin, line);
@@ -92,24 +93,30 @@ void readMessage() {
     ss >> dataTable::frame >> dataTable::money;
     getline(cin, line);
 
-    int skip = 0;
-    for (auto &s : dataTable::workStations) {
+    int skip_int = 0;
+    float skip_float = 0;
+    for (auto &s: dataTable::workStations) {
         int number;
         getline(cin, line);
-        ss.clear(); ss.str(line);
-        ss >> skip >> skip >> skip;
+        ss.clear();
+        ss.str(line);
+        ss >> skip_int >> skip_float >> skip_float;
         ss >> s.timeRemain >> number >> s.proState;
-        for (auto &state : s.matState){
-            state = number%2;
+        for (auto &state: s.matState) {
+            state = number % 2;
             number /= 2;
         }
     }
-    for (auto &r : dataTable::robots) {
+    for (auto &r: dataTable::robots) {
         getline(cin, line);
-        ss.clear(); ss.str(line);
+        ss.clear();
+        ss.str(line);
         ss >> r.stationID >> r.item >> r.tValue >> r.hValue;
         ss >> r.angleV >> r.lineVX >> r.lineVY >> r.direction >> r.positionX >> r.positionY;
     }
     getline(cin, line);
+    if (line != "OK") {
+        logger.writeError("s", false);
+    }
 }
 
