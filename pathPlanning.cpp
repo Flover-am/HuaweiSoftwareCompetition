@@ -17,10 +17,9 @@ void setDestination(){
     int index = 0;
     for (auto &i : paths){
         sort(i.begin(), i.end(), [](auto &a, auto &b) {return a.second<b.second;});               // 将每组可能的解按值升序排列
-        for (int j = 0; j < paths.size(); ++j){
-            if (count(dataTable::destList.begin(), dataTable::destList.end(), i[j].first) == 0){  // 如果这个终点没有被其他机器人占用
-                dataTable::destList[index] = i[j].first;
-                dataTable::needRotate[index++] = true;
+        for (auto &path : i){
+            if (count(dataTable::destList.begin(), dataTable::destList.end(), path.first) == 0){  // 如果这个终点没有被其他机器人占用
+                dataTable::destList[index++] = path.first;
                 break;
             }
         }

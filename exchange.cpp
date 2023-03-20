@@ -14,7 +14,6 @@ void exchange(int RID, int SID){
         success = true;
     }
     if (success){
-        dataTable::needRotate[RID] = true;
         dataTable::destList[RID] = -1;
     }
 }

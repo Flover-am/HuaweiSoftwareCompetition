@@ -19,8 +19,7 @@ int dataTable::frame;
 int dataTable::money;
 vector<robot> dataTable::robots;
 vector<workStation> dataTable::workStations;
-array<int,  4> dataTable::destList{-1,-1,-1,-1};
-array<bool, 4> dataTable::needRotate{true,true,true,true};
+array<int, 4> dataTable::destList{-1,-1,-1,-1};
 
 // Logger：日志工具
 Logger logger = *new Logger(false);
@@ -42,15 +41,14 @@ int main() {
         printf("%d\n", dataTable::frame++);
 
         for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且已经抵达,进行买卖命令
-            if (dataTable::destList[j] > 0)
+            if (dataTable::destList[j] >= 0)
                 if (dataTable::destList[j] == dataTable::robots[j].stationID)
                     exchange(j, dataTable::destList[j]);
-        for (int j = 0; j < ROBOT_NUM; ++j) {
+        for (int j = 0; j < ROBOT_NUM; ++j)
             if (dataTable::destList[j] < 0) {   //  如果没有Destination,规划下一步动作
                 setDestination();
                 break;
             }
-        }
         for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且尚未抵达,进行移动命令
             if (dataTable::robots[j].stationID != dataTable::destList[j])
                 navigate(j, dataTable::destList[j]);
@@ -125,7 +123,5 @@ void readMessage() {
         }
     }
     getline(cin, line);
-    if (line != "OK")
-        logger.writeError("s", false);
 }
 

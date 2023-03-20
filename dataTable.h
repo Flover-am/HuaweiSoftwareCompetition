@@ -23,7 +23,6 @@ using namespace std;
 class dataTable {
 public:
     int a;
-    static array<bool, ROBOT_NUM> needRotate;           //是否需要在行进中旋转
     static array<int, ROBOT_NUM> destList;              //各个机器人的目的地
     static int frame;
     static int money;
