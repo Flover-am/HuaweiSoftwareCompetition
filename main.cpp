@@ -53,7 +53,7 @@ int main() {
         }
         for (int j = 0; j < ROBOT_NUM; ++j)     //  如果有Destination且尚未抵达,进行移动命令
             if (dataTable::robots[j].stationID != dataTable::destList[j])
-                    navigate(j, dataTable::destList[j]);
+                navigate(j, dataTable::destList[j]);
 
         puts("OK");
         fflush(stdout);
@@ -92,12 +92,13 @@ void readMessage() {
     ss >> dataTable::frame >> dataTable::money;
     getline(cin, line);
 
-    int skip = 0;
+    int skipInt = 0;    float skipFloat = 0;
     for (auto &s : dataTable::workStations) {
         int number;
         getline(cin, line);
-        ss.clear(); ss.str(line);
-        ss >> skip >> skip >> skip;
+        ss.clear();
+        ss.str(line);
+        ss >> skipInt >> skipFloat >> skipFloat;
         ss >> s.timeRemain >> number >> s.proState;
         for (auto &state : s.matState){
             state = number%2;
@@ -106,10 +107,25 @@ void readMessage() {
     }
     for (auto &r : dataTable::robots) {
         getline(cin, line);
-        ss.clear(); ss.str(line);
+        ss.clear();
+        ss.str(line);
         ss >> r.stationID >> r.item >> r.tValue >> r.hValue;
         ss >> r.angleV >> r.lineVX >> r.lineVY >> r.direction >> r.positionX >> r.positionY;
+        if(r.item != 0){
+            r.r = R_BIG;
+            r.m = M_BIG;
+            r.a = A_BIG;
+            r.alpha = ALPHA_BIG;
+        }
+        else{
+            r.r = R_SMALL;
+            r.m = M_SMALL;
+            r.a = A_SMALL;
+            r.alpha = ALPHA_SMALL;
+        }
     }
     getline(cin, line);
+    if (line != "OK")
+        logger.writeError("s", false);
 }
 

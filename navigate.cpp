@@ -1,11 +1,11 @@
 #include "navigate.h"
 
 void navigate(int RID, int SID){
-    float rx = dataTable::robots[RID].positionX;
-    float ry = dataTable::robots[RID].positionY;
-    float sx = dataTable::workStations[SID].positionX;
-    float sy = dataTable::workStations[SID].positionY;
     robot r = dataTable::robots[RID];
+    workStation s = dataTable::workStations[SID];
+    float rx = r.positionX, ry = r.positionY;
+    float sx = s.positionX, sy = s.positionY;
+    float rvx = r.lineVX, rvy = r.lineVY, angleV = r.angleV;
 
     float distance = sqrt((sy-ry)*(sy-ry)+(sx-rx)*(sx-rx));
     float angle = atan((sy-ry)/(sx-rx));
@@ -14,10 +14,10 @@ void navigate(int RID, int SID){
     float alpha = r.direction-angle;
     if (alpha > PAI)        alpha -= 2*PAI;
 
+    float omega = 0, v = V_MAX; //默认全速直线前进（已经计算过角度回正时如此前进不会错过目的地，但有待验证）
     if (abs(alpha) < 0.005) //如果偏移角足够小，则不再旋转
         dataTable::needRotate[RID] = false;
 
-    float omega = 0, v = V_MAX; //默认全速直线前进（已经计算过角度回正时如此前进不会错过目的地，但有待验证）
     if (dataTable::needRotate[RID]){
         if (alpha > 0)  omega = OMEGA_MAX >  FRAMES_PER_S*alpha ? FRAMES_PER_S*alpha :  OMEGA_MAX;
         else            omega = OMEGA_MAX > -FRAMES_PER_S*alpha ? FRAMES_PER_S*alpha : -OMEGA_MAX;
