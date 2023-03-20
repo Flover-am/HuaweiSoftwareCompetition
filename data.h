@@ -1,13 +1,11 @@
-#ifndef CODECRAFTSDK_DATATABLE_H
-#define CODECRAFTSDK_DATATABLE_H
+#ifndef CODECRAFTSDK_DATA_H
+#define CODECRAFTSDK_DATA_H
 
 #include <vector>
-#include <array>
 #include "robot.h"
 #include "workStation.h"
 
 #define PAI 3.14159f
-
 #define TILE_NUM 100
 #define TILE_SIZE 0.5
 #define ROBOT_NUM 4
@@ -17,18 +15,17 @@
 #define TIME_PER_FRAME 0.02f
 #define VALID_DISTANCE 0.4f
 
+#define PLAN_DEPTH 2
+
 using namespace std;
 
-class dataTable {
+class data {
 public:
-    int a;
-    static array<int, ROBOT_NUM> destList;              //各个机器人的目的地
     static int frame;
     static int money;
     static vector<robot> robots;
     static vector<workStation> workStations;
-
-    dataTable(int);
+    static pair<int, int> destList[ROBOT_NUM][PLAN_DEPTH];    //各个机器人的目的地, 以及它们即将进行的操作
 };
 
-#endif //CODECRAFTSDK_DATATABLE_H
+#endif //CODECRAFTSDK_DATA_H

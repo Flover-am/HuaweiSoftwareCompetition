@@ -4,7 +4,7 @@
 #include <vector>
 #include <cmath>
 
-#include "dataTable.h"
+#include "data.h"
 
 void navigate(int, int);
 

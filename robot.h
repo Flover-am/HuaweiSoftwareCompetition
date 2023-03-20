@@ -12,6 +12,15 @@
 #define A_BIG 14.16473f
 #define ALPHA_BIG 20.17050f
 
+#define ONLY_BUY 0
+#define PROD_SELL_1 1
+#define PROD_SELL_2 2
+#define PROD_SELL_3 3
+#define PROD_SELL_4 4
+#define PROD_SELL_5 5
+#define PROD_SELL_6 6
+#define ONLY_SELL 7
+
 class robot {
 public:
     int ID{-1};

@@ -1,9 +1,8 @@
 #ifndef CODECRAFTSDK_EXCHANGE_H
 #define CODECRAFTSDK_EXCHANGE_H
 
-#include "dataTable.h"
-#include "pathPlanning.h"
+#include "data.h"
 
-void exchange(int, int);
+void exchange(int, pair<int, int>);
 
 #endif //CODECRAFTSDK_EXCHANGE_H

@@ -5,7 +5,7 @@
 
 #include "robot.h"
 #include "workStation.h"
-#include "dataTable.h"
+#include "data.h"
 #include "Logger.h"
 
 #include "pathPlanning.h"
@@ -14,11 +14,11 @@
 
 using namespace std;
 // 储存数据的工具：包括frame，money，robot，workstation
-int dataTable::frame;
-int dataTable::money;
-vector<robot> dataTable::robots;
-vector<workStation> dataTable::workStations;
-array<int, 4> dataTable::destList{-1,-1,-1,-1};
+int data::frame;
+int data::money;
+vector<robot> data::robots;
+vector<workStation> data::workStations;
+pair<int, int> data::destList[ROBOT_NUM][PLAN_DEPTH];
 
 // Logger：日志工具
 Logger logger = *new Logger(false);
@@ -32,22 +32,27 @@ int main() {
     puts("OK");
     fflush(stdout);
 
-    dataTable::frame = 1;
-    dataTable::money = START_MONEY;
+    data::frame = 1;
+    data::money = START_MONEY;
+    for (int i = 0; i < ROBOT_NUM; ++i)
+        for (int j = 0; j < PLAN_DEPTH; ++j) {
+            pair<int, int> element(-1, -1);
+            data::destList[i][j] = element;
+        }
 
     for (int i = 0; i < FRAME_NUM; ++i) {
         readMessage();
-        printf("%d\n", dataTable::frame++);
+        printf("%d\n", data::frame++);
 
         for (int j = 0; j < ROBOT_NUM; ++j)
-            if (dataTable::destList[j] < 0)     //  如果没有Destination,规划下一步动作
+            if (data::destList[j][PLAN_DEPTH-1].first < 0)      //  如果规划不完全，准备规划路线
                 setDestination(j);
         for (int j = 0; j < ROBOT_NUM; ++j)
-            if (dataTable::destList[j] >= 0){
-                if (dataTable::destList[j] == dataTable::robots[j].stationID)   // 如果有Destination且已经抵达,进行买卖命令
-                    exchange(j, dataTable::destList[j]);
-                if (dataTable::destList[j] != dataTable::robots[j].stationID)   // 如果有Destination且尚未抵达,进行移动命令
-                    navigate(j, dataTable::destList[j]);
+            if (data::destList[j][0].first >= 0){               //  如果有下一步规划，准备行动
+                if (data::destList[j][0].first == data::robots[j].stationID)   // 如果已经抵达目标,进行买卖命令
+                    exchange(j, data::destList[j][0]);
+                if (data::destList[j][0].first != data::robots[j].stationID)   // 如果有Destination且尚未抵达,进行移动命令
+                    navigate(j, data::destList[j][0].first);
             }
 
         puts("OK");
@@ -71,12 +76,12 @@ void initMap() {
 
             float posX = (j+0.5)*TILE_SIZE, posY = (TILE_NUM-i-0.5)*TILE_SIZE;
             if (symbol == 'A'){
-                dataTable::robots.emplace_back(robot++, posX, posY);
+                data::robots.emplace_back(robot++, posX, posY);
                 if (robot > ROBOT_NUM)
                     logger.writeError("Robot more than 4.", true);
             }
             else if (isdigit(symbol))
-                dataTable::workStations.emplace_back(symbol-48, workStation++, posX, posY);
+                data::workStations.emplace_back(symbol - 48, workStation++, posX, posY);
         }
     }
     cin >> ws;
@@ -85,11 +90,11 @@ void readMessage() {
     string line;
     getline(cin, line);
     stringstream ss(line);
-    ss >> dataTable::frame >> dataTable::money;
+    ss >> data::frame >> data::money;
     getline(cin, line);
 
     int skipInt = 0;    float skipFloat = 0;
-    for (auto &s : dataTable::workStations) {
+    for (auto &s : data::workStations) {
         int number;
         getline(cin, line);
         ss.clear();
@@ -101,7 +106,7 @@ void readMessage() {
             number /= 2;
         }
     }
-    for (auto &r : dataTable::robots) {
+    for (auto &r : data::robots) {
         getline(cin, line);
         ss.clear();
         ss.str(line);

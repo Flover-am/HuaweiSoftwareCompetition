@@ -1,11 +1,11 @@
 #include "navigate.h"
 
 void navigate(int RID, int SID){
-    robot &r = dataTable::robots[RID];
-    workStation &s = dataTable::workStations[SID];
+    robot &r = data::robots[RID];
+    workStation &s = data::workStations[SID];
     float rx = r.positionX, ry = r.positionY;
     float sx = s.positionX, sy = s.positionY;
-    float rvx = r.lineVX, rvy = r.lineVY, angleV = r.angleV;
+    float rv = sqrt(r.lineVX*r.lineVX+r.lineVY*r.lineVY), angleV = r.angleV;
 
     float distance = sqrt((sy-ry)*(sy-ry)+(sx-rx)*(sx-rx));
     float angle = atan2((sy-ry), (sx-rx));
