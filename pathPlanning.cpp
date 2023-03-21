@@ -48,17 +48,31 @@ void setDestination(int RID) {
 
     for (auto &path : paths){
         for (int stepNum = STEP_DEPTH-depthNeeded; stepNum < STEP_DEPTH; ++stepNum) {
-            for (auto &fixedPath: data::destList) for (auto &fixedStep: fixedPath) { // 对于每一个确定好的路径
-                auto step = path.first[stepNum];
-                if (step.second != ONLY_SELL && step == fixedStep)    // 如果步骤冲突，则检查下一条
+            auto step = path.first[stepNum];
+            if (step.second == ONLY_SELL) // 最终卖出，不会冲突
+                goto in;
+
+           /* bool canSell = false;
+            if (step.second == ONLY_BUY){
+                int item = step.first;
+                for(auto &s : data::workStations)
+                    if (identify(item, s.type) && (s.matState[item] == 0 *//*|| ss.timeRemain != -1*//*)*//*且原料台均已满*//*){
+                        canSell = true;// 场上有地方卖
+                        break;
+                    }
+            }
+            if (!canSell)
+                goto out;*/
+
+            for (auto &fixedPath: data::destList) for (auto &fixedStep: fixedPath) {// 对于每一个确定好的路径
+                if (step == fixedStep)    // 如果步骤冲突，则检查下一条
                     goto out;
             }
         }
-        data::destList[RID] = path.first;   //均无冲突，结束
+        in : data::destList[RID] = path.first;   //均无冲突，结束
         return;
         out: continue;
     }
-    // TODO: 还需要考虑物品售价以及制作时长
     // TODO: 目前卖出同时不会买入
 }
 
@@ -99,7 +113,7 @@ float calculate(int RID, int SID, bool firstStep) {
         distanceY = abs(ss.positionY-s.positionY);
     }
     float result;
-    // TODO:目前采用简单计算距离的方法，算法待优化，可以计算行进时间与目标工作台工作剩余时间
+    // TODO: 目前采用简单计算距离的方法，算法待优化，还需要考虑物品售价以及行进时间与目标工作台工作剩余时间
     result = distanceX*distanceX+distanceY*distanceY;
     return result;
 }
@@ -108,13 +122,28 @@ deque<pair<int, int>> findStation(int item){
     if (item == 0){
         for(auto &s : data::workStations)
             // 如果机器人空闲，寻找可以生产商品的工作台
-            if (s.proState == 1 || s.timeRemain != -1)
-                stations.emplace_back(s.id, ONLY_BUY);
+            if (s.proState == 1 || s.timeRemain != -1){
+                int buyItem = s.type;
+                for (auto &sellS : data::workStations)
+                    if (identify(buyItem, sellS.type) && (sellS.matState[buyItem] == 0 /*|| ss.timeRemain != -1*/)/*且原料台均已满*/) { // 场上有可卖的工作台
+                        bool canSell = true;
+                        for (auto &fixedPath: data::destList) for (auto &fixedStep: fixedPath)      // 判定潜在的卖出冲突
+                            if (fixedStep.first == sellS.id)                                        // 若去同一个工作台
+                                if (fixedStep.second == buyItem && fixedStep.second != ONLY_SELL){  // 若有冲突
+                                    canSell = false;
+                                    goto out;
+                                }
+                        out: if (canSell){
+                            stations.emplace_back(s.id, ONLY_BUY);
+                            break;
+                        }
+                    }
+            }
     }
     else{
         for(auto &s : data::workStations)
             // 如果机器人载物，寻找需要原料的工作台
-            if (identify(item, s.type) && (s.matState[item] == 0 || s.timeRemain != -1)) {
+            if (identify(item, s.type) && (s.matState[item] == 0 /*|| s.timeRemain != -1*/)/*且原料台均已满*/) {
                 if (s.type == 8 || s.type == 9)
                     stations.emplace_back(s.id, ONLY_SELL);
                 else
