@@ -27,6 +27,8 @@ public:
     static vector<workStation> workStations;
     static array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> destList;
     // 存放所有路径，int1.workStation号码 int2.对应操作
+    static array<vector<int>, 8> receiveStationIDs;
+    // 存放可以接受各种物品作为原料的所有工作台
 };
 
 #endif //CODECRAFTSDK_DATA_H

@@ -10,8 +10,9 @@ void navigate(int RID, int SID){
     float distance = sqrt((sy-ry)*(sy-ry)+(sx-rx)*(sx-rx));
     float angle = atan2((sy-ry), (sx-rx));
     float alpha = angle-r.direction;
-    if (alpha >  PAI)   alpha += 2*PAI;
+    if (alpha >  PAI)   alpha -= 2*PAI;
     if (alpha < -PAI)   alpha += 2*PAI;
+
 
     float omega, v = 0; //默认静止
 

@@ -22,7 +22,7 @@ void exchange(int RID, pair<int, int> SID){
     if (success){
         for (int i = STEP_DEPTH - 1; i > 0; --i)
             data::destList[RID][i-1] = data::destList[RID][i];
-        pair<int, int> element(-1, -1);
-        data::destList[RID][STEP_DEPTH - 1] = element;
+        data::destList[RID][STEP_DEPTH-1].first = -1;
+        data::destList[RID][STEP_DEPTH-1].second = -1;
     }
 }

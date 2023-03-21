@@ -9,6 +9,7 @@
 #include "Logger.h"
 
 #include "pathPlanning.h"
+#include "conflictRecall.h"
 #include "navigate.h"
 #include "exchange.h"
 
@@ -19,6 +20,7 @@ int data::money;
 vector<robot> data::robots;
 vector<workStation> data::workStations;
 array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> data::destList;
+array<vector<int>, 8> data::receiveStationIDs;
 
 // Logger：日志工具
 Logger logger = *new Logger(false);
@@ -40,19 +42,26 @@ int main() {
             data::destList[i][j] = element;
         }
 
-    for (int i = 0; i < FRAME_NUM; ++i) {
+    for (int frame = 0; frame < FRAME_NUM; ++frame) {
         readMessage();
         printf("%d\n", data::frame++);
 
-        for (int j = 0; j < ROBOT_NUM; ++j)
-            if (data::destList[j][STEP_DEPTH-1].first < 0)      //  如果规划不完全，准备规划路线
-                setDestination(j);
-        for (int j = 0; j < ROBOT_NUM; ++j)
-            if (data::destList[j][0].first >= 0){               //  如果有下一步规划，准备行动
-                if (data::destList[j][0].first == data::robots[j].stationID)   // 如果已经抵达目标,进行买卖命令
-                    exchange(j, data::destList[j][0]);
-                if (data::destList[j][0].first != data::robots[j].stationID)   // 如果有Destination且尚未抵达,进行移动命令
-                    navigate(j, data::destList[j][0].first);
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
+            // 如果需要购买，检测之后是否存在新的出售冲突
+            if (ONLY_BUY == data::destList[robotNum][STEP_DEPTH-1].second){
+                auto SID = data::destList[robotNum][STEP_DEPTH-1].first;
+                detectConflict(robotNum, data::workStations[SID].type);
+            }
+
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
+            if (data::destList[robotNum][STEP_DEPTH-1].first < 0)      //  如果规划不完全，准备规划路线
+                setDestination(robotNum);
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
+            if (data::destList[robotNum][0].first >= 0){               //  如果有下一步规划，准备行动
+                if (data::destList[robotNum][0].first == data::robots[robotNum].stationID)   // 如果已经抵达目标,进行买卖命令
+                    exchange(robotNum, data::destList[robotNum][0]);
+                if (data::destList[robotNum][0].first != data::robots[robotNum].stationID)   // 如果有Destination且尚未抵达,进行移动命令
+                    navigate(robotNum, data::destList[robotNum][0].first);
             }
 
         puts("OK");
@@ -67,7 +76,7 @@ void initMap() {
 
     for (int i = 0; getline(cin, line); i++) {
         if (line == "OK")
-            return;
+            break;
 
         for (int j = 0; j < 100; ++j) {
             char symbol = line[j];
@@ -81,10 +90,40 @@ void initMap() {
                     logger.writeError("Robot more than 4.", true);
             }
             else if (isdigit(symbol))
-                data::workStations.emplace_back(symbol - 48, workStation++, posX, posY);
+                data::workStations.emplace_back(symbol-'0', workStation++, posX, posY);
         }
     }
-    cin >> ws;
+    for (const auto &station : data::workStations) {
+        if (station.type == 4){
+            data::receiveStationIDs[1].emplace_back(station.id);
+            data::receiveStationIDs[2].emplace_back(station.id);
+        }
+        else if (station.type == 5){
+            data::receiveStationIDs[1].emplace_back(station.id);
+            data::receiveStationIDs[3].emplace_back(station.id);
+        }
+        else if (station.type == 6){
+            data::receiveStationIDs[2].emplace_back(station.id);
+            data::receiveStationIDs[3].emplace_back(station.id);
+        }
+        else if (station.type == 7){
+            data::receiveStationIDs[4].emplace_back(station.id);
+            data::receiveStationIDs[5].emplace_back(station.id);
+            data::receiveStationIDs[6].emplace_back(station.id);
+        }
+        else if (station.type == 8){
+            data::receiveStationIDs[7].emplace_back(station.id);
+        }
+        else if (station.type == 9){
+            data::receiveStationIDs[1].emplace_back(station.id);
+            data::receiveStationIDs[2].emplace_back(station.id);
+            data::receiveStationIDs[3].emplace_back(station.id);
+            data::receiveStationIDs[4].emplace_back(station.id);
+            data::receiveStationIDs[5].emplace_back(station.id);
+            data::receiveStationIDs[6].emplace_back(station.id);
+            data::receiveStationIDs[7].emplace_back(station.id);
+        }
+    }
 }
 void readMessage() {
     string line;

@@ -2,7 +2,7 @@
 #include "iostream"
 
 workStation::workStation(int _type, int _id, float x, float y):
-        positionX(x), positionY(y), id(_id), type(_type) {}
+        type(_type), id(_id), positionX(x), positionY(y) {}
 workStation::workStation(){};
 
 string workStation::to_string(){
