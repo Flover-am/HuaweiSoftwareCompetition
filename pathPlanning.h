@@ -6,12 +6,12 @@
 
 #include "data.h"
 #include "Logger.h"
+#include "navigate.h"
+#include "material.h"
 
 // 规划路线的函数
 void setDestination(int);
-float calculate(int, int, bool);
 deque<pair<int, int>> findStation(int);
-
-extern Logger logger;
+float calculateValue(int, pair<int, int>, bool);
 
 #endif //CODECRAFTSDK_PATHPLANNING_H

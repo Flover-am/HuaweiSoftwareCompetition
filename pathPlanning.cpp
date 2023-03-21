@@ -39,9 +39,9 @@ void setDestination(int RID) {
     for (auto &path : paths)
         for (int step = STEP_DEPTH-depthNeeded; step < STEP_DEPTH; ++step){
             if (step == 0)
-                path.second += calculate(RID, path.first[step].first, true);
+                path.second += calculateValue(RID, path.first[step], true);
             else
-                path.second += calculate(path.first[step-1].first, path.first[step].first, false);
+                path.second += calculateValue(path.first[step-1].first, path.first[step], false);
         }
     // 按权值排序，最终确定一条路径
     sort(paths.begin(), paths.end(), [](auto &a, auto &b) {return a.second<b.second;});
@@ -75,24 +75,6 @@ void setDestination(int RID) {
     }
     // TODO: 目前卖出同时不会买入
     // TODO: 时间不足时不再买入
-}
-float calculate(int RID, int SID, bool firstStep) {
-    workStation &s = data::workStations[SID];
-    float distanceX, distanceY;
-    if (firstStep){
-        auto &r = data::robots[RID];
-        distanceX = abs(r.positionX-s.positionX);
-        distanceY = abs(r.positionY-s.positionY);
-    }
-    else{
-        auto &ss = data::workStations[RID];
-        distanceX = abs(ss.positionX-s.positionX);
-        distanceY = abs(ss.positionY-s.positionY);
-    }
-    float result;
-    // TODO: 目前采用简单计算距离的方法，算法待优化，还需要考虑物品售价以及行进时间与目标工作台工作剩余时间
-    result = distanceX*distanceX+distanceY*distanceY;
-    return result;
 }
 deque<pair<int, int>> findStation(int item){
     deque<pair<int, int>> stations;
@@ -135,6 +117,51 @@ deque<pair<int, int>> findStation(int item){
     }
     // TODO: 算法优化
     return stations;
+}
+float calculateValue(int RID, pair<int, int> step, bool firstStep){
+    workStation &s = data::workStations[step.first];
+    float time = calculateTime(RID, step, firstStep);
+
+    float worth = 0;
+    if (step.second == ONLY_BUY){
+        if (s.type == 1)
+            worth = WORTH_1;
+        else if (s.type == 2)
+            worth = WORTH_2;
+        else if (s.type == 3)
+            worth = WORTH_3;
+        else if (s.type == 4)
+            worth = WORTH_4;
+        else if (s.type == 5)
+            worth = WORTH_5;
+        else if (s.type == 6)
+            worth = WORTH_6;
+        else if (s.type == 7)
+            worth = WORTH_7;
+    }
+    else{
+        int item;
+        if (firstStep)  item = data::robots[RID].item;
+        else            item = data::workStations[RID].type;
+        if (item == 1)
+            worth = WORTH_1;
+        else if (item == 2)
+            worth = WORTH_2;
+        else if (item == 3)
+            worth = WORTH_3;
+        else if (item == 4)
+            worth = WORTH_4;
+        else if (item == 5)
+            worth = WORTH_5;
+        else if (item == 6)
+            worth = WORTH_6;
+        else if (item == 7)
+            worth = WORTH_7;
+        if (item != 7 && step.second == ONLY_SELL)
+            worth /= 2;
+    }
+    float value = time/worth;
+    return value;
 }
 
 
