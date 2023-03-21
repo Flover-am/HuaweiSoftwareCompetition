@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "robot.h"
-#include "workStation.h"
+#include "station.h"
 
 #define PAI 3.14159f
 #define TILE_NUM 100
@@ -19,16 +19,28 @@
 
 using namespace std;
 
+struct Step {
+    int SID{-1};
+    int OID{-1};
+    int timeStamp{-1};
+    float value{0};
+    int lastIndex{-1};
+    vector<int> nextIndex{-1};
+};
+
 class data {
 public:
     static int frame;
     static int money;
     static vector<robot> robots;
-    static vector<workStation> workStations;
-    static array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> destList;
-    // 存放所有路径，int1.workStation号码 int2.对应操作
-    static array<vector<int>, 8> receiveStationIDs;
+    static vector<station> stations;
+    // 存放所有路径树
+    static array<array<vector<Step>, STEP_DEPTH>, ROBOT_NUM> pathTrees;
+    // 存放选择的路径号
+    static array<int, ROBOT_NUM> pathNums;
     // 存放可以接受各种物品作为原料的所有工作台
+    static array<vector<int>, 8> receiveStationIDs;
+
 };
 
 #endif //CODECRAFTSDK_DATA_H

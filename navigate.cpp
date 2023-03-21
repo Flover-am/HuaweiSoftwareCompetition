@@ -2,17 +2,17 @@
 
 void navigate(int RID, int SID){
     robot &r = data::robots[RID];
-    workStation &s = data::workStations[SID];
+    station &s = data::stations[SID];
     float rx = r.positionX, ry = r.positionY;
     float sx = s.positionX, sy = s.positionY;
-    float rv = sqrt(r.lineVX*r.lineVX+r.lineVY*r.lineVY), angleV = r.angleV;
+    float rv = sqrt(r.lineVX*r.lineVX+r.lineVY*r.lineVY);
+    float angleV = r.angleV;
 
     float distance = sqrt((sy-ry)*(sy-ry)+(sx-rx)*(sx-rx));
     float angle = atan2((sy-ry), (sx-rx));
     float alpha = angle-r.direction;
     if (alpha >  PAI)   alpha -= 2*PAI;
     if (alpha < -PAI)   alpha += 2*PAI;
-
 
     float omega, v = -2; // 默认后退
 
@@ -50,8 +50,8 @@ void navigate(int RID, int SID){
     //TODO:没有计算一步运动所需的时间帧数，如可计算可用于路线规划中
     //TODO:倒行情况
 }
-float calculateTime(int RID, pair<int, int> step, bool firstStep) {
-    workStation &s = data::workStations[step.first];
+float calculateTime(int RID, int SID, int OID, bool firstStep) {
+    station &s = data::stations[SID];
     float distance, alpha = 0;
     float sx = s.positionX, sy = s.positionY;
     if (firstStep){
@@ -63,15 +63,15 @@ float calculateTime(int RID, pair<int, int> step, bool firstStep) {
         if (alpha < -PAI)   alpha += 2*PAI;
     }
     else{
-        auto &S = data::workStations[RID];
+        auto &S = data::stations[RID];
         float Sx = S.positionX, Sy = S.positionY;
         distance = sqrt((sy-Sy)*(sy-Sy)+(sx-Sx)*(sx-Sx));
     }
-    // TODO: 目前采用简单计算距离的方法，算法待优化，还需要考虑物品售价以及行进时间与目标工作台工作剩余时间
+
     float marchTime = 50*(distance/V_MAX+abs(alpha)/OMEGA_MAX);
     float awaitTime = 0;
-    if (step.second < ONLY_SELL)
-        if (step.second == ONLY_BUY || s.matState[step.second] == 1)
+    if (OID < ONLY_SELL)
+        if (OID == ONLY_BUY || s.matState[OID] == 1)
             awaitTime = (float)(s.timeRemain);
     float result = marchTime > awaitTime ? marchTime : awaitTime;
     return result;

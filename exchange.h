@@ -3,6 +3,7 @@
 
 #include "data.h"
 
-void exchange(int, pair<int, int>);
+void exchange(int, int, int);
+void pushStep(int);
 
 #endif //CODECRAFTSDK_EXCHANGE_H

@@ -1,68 +1,47 @@
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <array>
-
-#include "robot.h"
-#include "workStation.h"
-#include "data.h"
-#include "Logger.h"
-
-#include "pathPlanning.h"
-#include "conflictRecall.h"
-#include "navigate.h"
-#include "exchange.h"
-
-using namespace std;
-// 储存数据的工具：包括frame，money，robot，workstation
-int data::frame;
-int data::money;
-vector<robot> data::robots;
-vector<workStation> data::workStations;
-array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> data::destList;
-array<vector<int>, 8> data::receiveStationIDs;
-
-// Logger：日志工具
-Logger logger = *new Logger(false);
-
-void initMap();
-void readMessage();
+#include "main.h"
 
 int main() {
 
     initMap();
-    puts("OK");
-    fflush(stdout);
 
     data::frame = 1;
     data::money = START_MONEY;
-    for (int i = 0; i < ROBOT_NUM; ++i)
-        for (int j = 0; j < STEP_DEPTH; ++j) {
-            pair<int, int> element(-1, -1);
-            data::destList[i][j] = element;
-        }
+    vector<Step> defaultSteps;
+    for (auto &path : data::pathTrees)
+        for (auto &step : path)
+            step = defaultSteps;
+    for (auto &num : data::pathNums)
+        num = -1;
 
     for (int frame = 0; frame < FRAME_NUM; ++frame) {
         readMessage();
         printf("%d\n", data::frame++);
 
-        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
+
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
+            selectPath(robotNum);
+        }
+        /*for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
             // 如果需要购买，检测之后是否存在新的出售冲突
             if (ONLY_BUY == data::destList[robotNum][STEP_DEPTH-1].second){
                 auto SID = data::destList[robotNum][STEP_DEPTH-1].first;
-                detectConflict(robotNum, data::workStations[SID].type);
-            }
+                detectConflict(robotNum, data::stations[SID].type);
+            }*/
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
-            if (data::destList[robotNum][STEP_DEPTH-1].first < 0)      //  如果规划不完全，准备规划路线
-                setDestination(robotNum);
-        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
-            if (data::destList[robotNum][0].first >= 0){               //  如果有下一步规划，准备行动
-                if (data::destList[robotNum][0].first == data::robots[robotNum].stationID)   // 如果已经抵达目标,进行买卖命令
-                    exchange(robotNum, data::destList[robotNum][0]);
-                if (data::destList[robotNum][0].first != data::robots[robotNum].stationID)   // 如果有Destination且尚未抵达,进行移动命令
-                    navigate(robotNum, data::destList[robotNum][0].first);
+            if (data::pathTrees[robotNum][STEP_DEPTH - 1].empty())      //  如果规划不完全，准备规划路线
+                setPathTree(robotNum);
+
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
+            auto &steps = data::pathTrees[robotNum][0];
+            if (!steps.empty()){                                        //  如果有下一步规划，准备行动
+                if (steps[0].SID == data::robots[robotNum].stationID)   // 如果已经抵达目标,进行买卖命令
+                    exchange(robotNum, steps[0].SID, steps[0].OID);
+                if (steps[0].SID != data::robots[robotNum].stationID)   // 如果有Destination且尚未抵达,进行移动命令
+                    navigate(robotNum, steps[0].SID);
             }
+        }
+
 
         puts("OK");
         fflush(stdout);
@@ -90,10 +69,10 @@ void initMap() {
                     logger.writeError("Robot more than 4.", true);
             }
             else if (isdigit(symbol))
-                data::workStations.emplace_back(symbol-'0', workStation++, posX, posY);
+                data::stations.emplace_back(symbol - '0', workStation++, posX, posY);
         }
     }
-    for (const auto &station : data::workStations) {
+    for (const auto &station : data::stations) {
         if (station.type == 4){
             data::receiveStationIDs[1].emplace_back(station.id);
             data::receiveStationIDs[2].emplace_back(station.id);
@@ -124,6 +103,8 @@ void initMap() {
             data::receiveStationIDs[7].emplace_back(station.id);
         }
     }
+    puts("OK");
+    fflush(stdout);
 }
 void readMessage() {
     string line;
@@ -133,14 +114,16 @@ void readMessage() {
     getline(cin, line);
 
     int skipInt = 0;    float skipFloat = 0;
-    for (auto &s : data::workStations) {
-        int number;
+    for (auto &s : data::stations) {
+        int number, timeRemain, proState;
+        array<int, 8> matState{};
         getline(cin, line);
         ss.clear();
         ss.str(line);
         ss >> skipInt >> skipFloat >> skipFloat;
-        ss >> s.timeRemain >> number >> s.proState;
-        for (auto &state : s.matState){
+        ss >> timeRemain >> number >> proState;
+
+        for (auto &state : matState){
             state = number%2;
             number /= 2;
         }

@@ -1,11 +1,11 @@
-#include "workStation.h"
+#include "station.h"
 #include "iostream"
 
-workStation::workStation(int _type, int _id, float x, float y):
+station::station(int _type, int _id, float x, float y):
         type(_type), id(_id), positionX(x), positionY(y) {}
-workStation::workStation(){};
+station::station(){};
 
-string workStation::to_string(){
+string station::to_string(){
     string res =
             "WorkStation[" + std::to_string(id) + "]" +
             "(1)type:" + std::to_string(type) + "   " +

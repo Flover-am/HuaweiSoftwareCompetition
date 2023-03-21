@@ -1,167 +1,178 @@
 #include "pathPlanning.h"
+void selectPath(int RID){
+    auto &pathTree = data::pathTrees[RID];
+    vector<float> weights;
+    vector<bool> available;
+    // TODO: 刷新权值
+    int width = pathTree[STEP_DEPTH-1].size();
+    // 冲突检测
+    for (int i = 0; i < width; ++i){
+        bool conflict = false;
+        int index = i;
+        for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
+            auto &step = pathTree[depth][index];
+            if (step.OID == ONLY_SELL)  // 如果只卖，不会发生冲突
+                continue;
 
-void setDestination(int RID) {
-    int depthNeeded = 1;  // 需要规划的步骤数目
+            for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){ // 对每个其他的机器人
+                if (robotNum == RID)
+                    continue;
+
+                int _index = data::pathNums[robotNum];  // 选中机器人的当前路径
+                for (int _depth = STEP_DEPTH-1; _depth >= 0; --_depth){
+                    auto &_step = pathTree[_depth][_index];
+                    if (_step.SID == step.SID && _step.OID == _step.SID){
+                        conflict = true;
+                        goto out;
+                    }          // 如果发生冲突
+                    _index = _step.lastIndex;
+                }
+
+            }
+            index = step.lastIndex;
+        }
+        out :
+        available.emplace_back(!conflict);
+    }
+    // 将权值加和
+    for (int i = 0; i < width; ++i){
+        float weight = 0;
+        int index = i;
+        for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
+            weight += pathTree[depth][index].value;
+            index = pathTree[depth][index].lastIndex;
+        }
+        weights.emplace_back(weight);
+    }
+    // 选择
+    for (int i = 0; i < width; ++i)
+        if (available[i] && weights[i] < weights[data::pathNums[RID]])
+            data::pathNums[RID] = i;
+}
+void setPathTree(int RID) {
+    robot &r = data::robots[RID];
+    auto &pathTree = data::pathTrees[RID];
+
+    int depthNeeded = 1;                // 计算需要规划的步骤深度
     while (depthNeeded < STEP_DEPTH){
-        if (data::destList[RID][STEP_DEPTH-depthNeeded-1].first == -1)
+        if (pathTree[STEP_DEPTH-depthNeeded-1].empty())
             depthNeeded++;
         else
             break;
     }
-
-    robot &r = data::robots[RID];
-    // 初始化，int1: 工作站编号 int2: 操作名称 float: 权值
-    pair<array<pair<int, int>, STEP_DEPTH>, float> tmpPath(data::destList[RID], 0);
-    deque<pair<array<pair<int, int>, STEP_DEPTH>, float>> paths{tmpPath};
-
-    for (int stepNum = STEP_DEPTH-depthNeeded; stepNum < STEP_DEPTH; ++stepNum) {
-        int size = (int)(paths.size());
-        for (int count = 0; count < size; ++count) {
-            // 确定当前步骤，机器人携带的物品号
-            int item = 0;
-            if (stepNum == 0)
-                item = r.item;
-            else if (paths[0].first[stepNum-1].second == ONLY_BUY)
-                item = data::workStations[paths[0].first[stepNum-1].first].type;
-
-            // 寻找新的步骤
-            auto steps = findStation(item);
-            auto incompletePath = paths[0];                 // 上一段循环得到的不完整的路径
-            paths.pop_front();
-            for (auto &step : steps){
-                auto completePath = incompletePath;
-                completePath.first[stepNum] = step;         // 在后面添加新的步骤，补全路径
-                paths.emplace_back(completePath);
-            }
+    // 构建路径树
+    for (int depth = STEP_DEPTH-depthNeeded; depth < STEP_DEPTH; ++depth) {
+        // 如果需要从头构建
+        if (depth == 0){
+            auto steps = findStation(RID, r.item, 0, true);
+            for (auto &step : steps)
+                pathTree[depth].emplace_back(step);
         }
-    }
-    // 计算权值
-    for (auto &path : paths)
-        for (int step = STEP_DEPTH-depthNeeded; step < STEP_DEPTH; ++step){
-            if (step == 0)
-                path.second += calculateValue(RID, path.first[step], true);
-            else
-                path.second += calculateValue(path.first[step-1].first, path.first[step], false);
-        }
-    // 按权值排序，最终确定一条路径
-    sort(paths.begin(), paths.end(), [](auto &a, auto &b) {return a.second<b.second;});
+        else{
+            int lastIndex = 0, index = 0;
+            for (const auto &lastStep : pathTree[depth-1]){
+                int item = 0;
+                if (lastStep.OID == ONLY_BUY)
+                    item = data::stations[lastStep.SID].type;
 
-    for (auto &path : paths){
-        for (int stepNum = STEP_DEPTH-depthNeeded; stepNum < STEP_DEPTH; ++stepNum) {
-            auto step = path.first[stepNum];
-            if (step.second == ONLY_SELL) // 最终卖出，不会冲突
-                goto in;
-
-           /* bool canSell = false;
-            if (step.second == ONLY_BUY){
-                int item = step.first;
-                for(auto &s : data::workStations)
-                    if (identify(item, s.type) && (s.matState[item] == 0 *//*|| ss.timeRemain != -1*//*)*//*且原料台均已满*//*){
-                        canSell = true;// 场上有地方卖
-                        break;
-                    }
-            }
-            if (!canSell)
-                goto out;*/
-
-            for (auto &fixedPath: data::destList) for (auto &fixedStep: fixedPath) {// 对于每一个确定好的路径
-                if (step == fixedStep)    // 如果步骤冲突，则检查下一条
-                    goto out;
-            }
-        }
-        in : data::destList[RID] = path.first;   //均无冲突，结束
-        return;
-        out: continue;
-    }
-    // TODO: 目前卖出同时不会买入
-    // TODO: 时间不足时不再买入
-}
-deque<pair<int, int>> findStation(int item){
-    deque<pair<int, int>> stations;
-    if (item == 0){
-        for(auto &s : data::workStations)
-            // 如果机器人空闲，寻找可以生产商品的工作台
-            if (s.proState == 1 || s.timeRemain != -1){
-                item = s.type;
-                bool canSell = false;
-                // 寻找对应的出售地点
-                for (int &SID : data::receiveStationIDs[item]){
-                    auto &sellS = data::workStations[SID];
-
-                    for (auto &fixedPath: data::destList) for (auto &fixedStep: fixedPath)      // 判定潜在的卖出冲突
-                        if (fixedStep.first == sellS.id)                                        // 若去同一个工作台
-                            if (fixedStep.second == item && fixedStep.second != ONLY_SELL)      // 若有冲突
-                                goto out;
-                    // 如果场上有可卖的工作台
-                    if (sellS.matState[item] == 0 /*|| (ss.timeRemain != -1 且 原料台均已满)*/) {
-                        canSell = true;
-                        break;
-                    }
-                    out: continue;
+                auto steps = findStation(lastStep.SID, item, lastIndex, false);
+                for (auto &step : steps){
+                    pathTree[depth].emplace_back(step);
+                    pathTree[depth-1][lastIndex].nextIndex.emplace_back(index);
+                    index++;
                 }
-                if (canSell)
-                    stations.emplace_back(s.id, ONLY_BUY);
+                lastIndex++;
+            }
+        }
+    }
+    // 可能有不完整的路径，但予以保存
+
+    // TODO: 目前卖出同时不会买入
+    // TODO: 时间不足时应该不再买入
+}
+vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
+    vector<Step> stations;
+
+    if (IID == 0){
+        for(auto &s : data::stations)
+            // 如果机器人空闲，寻找可以生产商品的工作台
+            if (s.type <= 7){
+                pair<float, float> value = calculateValue(RID, s.id, ONLY_BUY, firstStep);
+                int timeStamp = (int)value.first+data::frame;
+                vector<int> newNext;
+                Step newStep{s.id, ONLY_BUY, timeStamp, value.second, lastIndex, newNext};
+                stations.emplace_back(newStep);
             }
     }
     else{
-        for (int &SID : data::receiveStationIDs[item]) {
-            auto &s = data::workStations[SID];
-            if (s.matState[item] == 0 /*|| (ss.timeRemain != -1 且 原料台均已满)*/) {
-                if (s.type == 8 || s.type == 9)
-                    stations.emplace_back(s.id, ONLY_SELL);
-                else
-                    stations.emplace_back(s.id, item);
-                //TODO: r.item与robot中定义的宏相对应，需用于其它机器人调用查看行动是否冲突
+        for (int &SID : data::receiveStationIDs[IID]) {
+            auto &s = data::stations[SID];
+            if (s.type == 8 || s.type == 9){
+                pair<float, float> value = calculateValue(RID, s.id, ONLY_SELL, firstStep);
+                int timeStamp = (int)value.first+data::frame;
+                vector<int> newNext;
+                Step newStep{s.id, ONLY_SELL, timeStamp, value.second, lastIndex, newNext};
+                stations.emplace_back(newStep);
+            }
+
+            else{
+                pair<float, float> value = calculateValue(RID, s.id, IID, firstStep);
+                int timeStamp = (int)value.first+data::frame;
+                vector<int> newNext;
+                Step newStep{s.id, IID, timeStamp, value.second, lastIndex, newNext};
+                stations.emplace_back(newStep);
             }
         }
     }
     // TODO: 算法优化
     return stations;
 }
-float calculateValue(int RID, pair<int, int> step, bool firstStep){
-    workStation &s = data::workStations[step.first];
-    float time = calculateTime(RID, step, firstStep);
-
-    float worth = 0;
-    if (step.second == ONLY_BUY){
+pair<float, float> calculateValue(int RID, int SID, int OID, bool firstStep){
+    station &s = data::stations[SID];
+    pair<float, float> value;
+    value.first = calculateTime(RID, SID, OID, firstStep);
+    value.second = 0;
+    if (OID == ONLY_BUY){
         if (s.type == 1)
-            worth = WORTH_1;
+            value.second = WORTH_1;
         else if (s.type == 2)
-            worth = WORTH_2;
+            value.second = WORTH_2;
         else if (s.type == 3)
-            worth = WORTH_3;
+            value.second = WORTH_3;
         else if (s.type == 4)
-            worth = WORTH_4;
+            value.second = WORTH_4;
         else if (s.type == 5)
-            worth = WORTH_5;
+            value.second = WORTH_5;
         else if (s.type == 6)
-            worth = WORTH_6;
+            value.second = WORTH_6;
         else if (s.type == 7)
-            worth = WORTH_7;
+            value.second = WORTH_7;
     }
     else{
         int item;
         if (firstStep)  item = data::robots[RID].item;
-        else            item = data::workStations[RID].type;
+        else            item = data::stations[RID].type;
         if (item == 1)
-            worth = WORTH_1;
+            value.second = WORTH_1;
         else if (item == 2)
-            worth = WORTH_2;
+            value.second = WORTH_2;
         else if (item == 3)
-            worth = WORTH_3;
+            value.second = WORTH_3;
         else if (item == 4)
-            worth = WORTH_4;
+            value.second = WORTH_4;
         else if (item == 5)
-            worth = WORTH_5;
+            value.second = WORTH_5;
         else if (item == 6)
-            worth = WORTH_6;
+            value.second = WORTH_6;
         else if (item == 7)
-            worth = WORTH_7;
-        if (item != 7 && step.second == ONLY_SELL)
-            worth /= 2;
+            value.second = WORTH_7;
+        if (item != 7 && OID == ONLY_SELL)
+            value.second /= 2;
     }
-    float value = time/worth;
+    value.second = value.first/value.second;
     return value;
 }
+
+
 
 

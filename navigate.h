@@ -10,6 +10,6 @@
 extern Logger logger;
 
 void navigate(int, int);
-float calculateTime(int, pair<int, int>, bool);
+float calculateTime(int, int, int, bool);
 
 #endif //CODECRAFTSDK_NAVIGATE_H

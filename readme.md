@@ -10,7 +10,7 @@
 ## 类：
 
 - `robot`：机器人
-- `workStation`：工作台
+- `station`：工作台
 - `dataTable`:数据存储共享类（包含机器人，工作台，frame，钱）
 - `Logger`：日志类
 
