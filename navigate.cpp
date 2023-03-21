@@ -27,7 +27,7 @@ void navigate(int RID, int SID){
         if (!isnan(maxV_) && maxV_ < V_MAX) v = maxV_;
         else                                v = V_MAX;
 
-        // 是否需要为碰撞半径留出空余？
+        // 是否需要为碰撞半径留出空余？？
         if (r.direction > 0) {
             float maxV = (50-r.r-ry)*FRAMES_PER_S/sin(r.direction);
             if (v > maxV) v = maxV;
