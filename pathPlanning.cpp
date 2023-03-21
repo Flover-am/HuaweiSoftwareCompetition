@@ -44,12 +44,19 @@ void setDestination(int RID) {
                 path.second += calculate(path.first[step-1].first, path.first[step].first, false);
         }
     // 按权值排序，最终确定一条路径
+    sort(paths.begin(), paths.end(), [](auto &a, auto &b) {return a.second<b.second;});
+
     for (auto &path : paths){
-        sort(paths.begin(), paths.end(), [](auto &a, auto &b) {return a.second<b.second;});
-        if (count(data::destList.begin(), data::destList.end(), path.first) == 0) {       // 如果这个终点没有被其他机器人占用
-            data::destList[RID] = path.first;
-            break;
+        for (int stepNum = STEP_DEPTH-depthNeeded; stepNum < STEP_DEPTH; ++stepNum) {
+            for (auto &fixedPath: data::destList) for (auto &fixedStep: fixedPath) { // 对于每一个确定好的路径
+                auto step = path.first[stepNum];
+                if (step.second != ONLY_SELL && step == fixedStep)    // 如果步骤冲突，则检查下一条
+                    goto out;
+            }
         }
+        data::destList[RID] = path.first;   //均无冲突，结束
+        return;
+        out: continue;
     }
     // TODO: 还需要考虑物品售价以及制作时长
     // TODO: 目前卖出同时不会买入
