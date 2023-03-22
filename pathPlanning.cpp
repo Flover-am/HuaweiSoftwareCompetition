@@ -2,10 +2,11 @@
 
 void selectPath(int RID){
     auto &pathTree = data::pathTrees[RID];
+    auto width = pathTree[STEP_DEPTH-1].size();
     vector<float> weights;
     vector<bool> valids;
 
-    auto width = pathTree[STEP_DEPTH-1].size();
+    //logger.writeInfo("robot: "+ to_string(RID));
     for (int i = 0; i < width; ++i) {
         bool valid = true;
         double valueSum = pathTree[STEP_DEPTH-1][i].valueSum;
@@ -33,15 +34,20 @@ void selectPath(int RID){
                         break;
                     }
                 if (thisIndex == -1){   // 没有本step对应的请求
+                    //logger.writeInfo("occupied :" + to_string(i));
                     valid = false;
                     break;
+                }
+                else{
+                    //logger.writeInfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 }
                 int conflictRID = -1;
                 for (auto &ask : asksPort)
                     if (ask.RID != RID && ask.RID != conflictRID){ // 发生了冲突，可能需要回溯
                         conflictRID = ask.RID;
-                        if (valueSum < ask.value || (valueSum == ask.value && RID < ask.RID)){ // TODO:VALUE
+                        if (valueSum < ask.value || (valueSum == ask.value && RID < ask.RID)){
                             asksPort.erase(asksPort.begin()+thisIndex);
+                            //logger.writeInfo("conflict :" + to_string(i));
                             valid = false;
                             goto out;
                         }
@@ -71,11 +77,18 @@ void selectPath(int RID){
     for (int i = 0; i < width; ++i)
         if (weights[i] > weights[pathIndex])
             pathIndex = i;
+    /*string s;
+    for (int i = 0; i < width; ++i){
+        if (i != pathIndex)
+            s += to_string((int)(valids[i])) + " ";
+        else
+            s += to_string(2) + " ";
+    }
+    logger.writeInfo(s);*/
     for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
         data::optedPaths[RID][depth] = pathIndex;
         pathIndex = pathTree[depth][pathIndex].lastIndex;
     }
-
 }
 void setPathTree(int RID) {
     robot &r = data::robots[RID];

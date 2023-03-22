@@ -28,9 +28,11 @@ public:
     int timeRemain{-1};
     int proState{0};
     array<int ,8> matState{0};
+
+
     // 各个端口可用的时间戳，-1代表不可用，[0]代表成品端口
     array<int, 8> portAvailableTime{-1, -1, -1, -1, -1, -1, -1, -1};
-    // 各个端口将接收到对应机器人买卖请求的时间戳
+    // 各个端口将接收到对应机器人买卖请求
     array<vector<Ask>, 8> portRecvAskTime;
 
     station(int, int, double, double);

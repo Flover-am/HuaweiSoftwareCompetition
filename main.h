@@ -20,6 +20,7 @@ using namespace std;
 void initMap();
 void readMessage();
 void refresh();
+void outputNowPath();
 
 int data::frame;
 int data::money;
@@ -29,6 +30,6 @@ array<array<vector<Step>, STEP_DEPTH>, ROBOT_NUM> data::pathTrees;
 array<array<int, STEP_DEPTH>, ROBOT_NUM>  data::optedPaths;
 
 array<vector<int>, 8> data::receiveStationIDs;
-Logger logger = *new Logger(false);
+Logger logger;
 
 #endif //CODECRAFTSDK_MAIN_H

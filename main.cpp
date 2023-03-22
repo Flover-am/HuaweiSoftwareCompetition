@@ -19,6 +19,7 @@ int main() {
         readMessage();  // 清空portRecvAskTime, 从输入加载portAvailableTime
         refresh();      // 从optedPath加载portRecvAskTime, 覆写portAvailableTime
         printf("%d\n", data::frame);
+        logger.writeInfo("frame: "+to_string(data::frame) + "\n");
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
             if (data::pathTrees[robotNum][STEP_DEPTH-1].empty())        //  如果树不完全，准备规划路线
@@ -28,25 +29,9 @@ int main() {
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)       //  选择一条树中的路线
             selectPath(robotNum);
 
-        {
-            logger.writeInfo("frame: "+to_string(data::frame), false);
-            int p = 0;
-            for (auto &pathIndex : data::optedPaths){
-                string s;
-                int x = 0;
-                for (auto &stepIndex : pathIndex){
-                    auto steps = data::pathTrees[p][x];
-                    s += "SID: " + to_string(steps[stepIndex].SID) + "\t";
-                    if (x == 2)
-                        s += to_string(steps[stepIndex].valueSum) + " " + to_string(stepIndex);
-                    ++x;
-                }
-                logger.writeInfo(s, false);
-                ++p;
-            }
-        }
+        outputNowPath();
 
-        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
             int optIndex = data::optedPaths[robotNum][0];
             if (optIndex != -1){
                 Step &step = data::pathTrees[robotNum][0][optIndex];    //  如果有下一步规划，准备行动
@@ -78,7 +63,7 @@ void initMap() {
             if (symbol == 'A'){
                 data::robots.emplace_back(robot++, posX, posY);
                 if (robot > ROBOT_NUM)
-                    logger.writeError("Robot more than 4.", true);
+                    logger.writeError("Robot more than 4.");
             }
             else if (isdigit(symbol))
                 data::stations.emplace_back(symbol-'0', workStation++, posX, posY);
@@ -182,6 +167,23 @@ void readMessage() {
 }
 void refresh(){
     // TODO: 可用时间帧数组
+    // 刷新权值与时间戳
+    for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
+        for (auto &step : data::pathTrees[robotNum][0]){
+            int SID = step.SID, OID = step.OID;
+            pair<float, float> value = calculateValue(robotNum, SID, OID, true);
+            step.frame = step.frameSum = (int)value.first;
+            step.value = step.valueSum = value.second;
+        }
+        for (int depth = 1; depth < STEP_DEPTH; ++depth){
+            for (auto &step : data::pathTrees[robotNum][depth]){
+                auto &lastIndex = step.lastIndex;
+                auto &lastStep = data::pathTrees[robotNum][depth-1][lastIndex];
+                step.frameSum = step.frame+lastStep.frameSum;
+                step.valueSum = step.value+lastStep.valueSum;
+            }
+        }
+    }
     // 从当前路径加载所有receiveAskTime
     for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
         const auto &pathIndex = data::optedPaths[robotNum];
@@ -279,21 +281,21 @@ void refresh(){
             }
         }
     }
-    // 刷新权值与时间戳
-    for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
-        for (auto &step : data::pathTrees[robotNum][0]){
-            int SID = step.SID, OID = step.OID;
-            pair<float, float> value = calculateValue(robotNum, SID, OID, true);
-            step.frame = step.frameSum = (int)value.first;
-            step.value = step.valueSum = value.second;
+}
+void outputNowPath(){
+    logger.writeInfo("frame: "+to_string(data::frame));
+    int p = 0;
+    for (auto &pathIndex : data::optedPaths){
+        string s;
+        int x = 0;
+        for (auto &stepIndex : pathIndex){
+            auto steps = data::pathTrees[p][x];
+            s += "SID: " + to_string(steps[stepIndex].SID) + "\t";
+            if (x == 2)
+                s += to_string(steps[stepIndex].valueSum) + " " + to_string(stepIndex);
+            ++x;
         }
-        for (int depth = 1; depth < STEP_DEPTH; ++depth){
-            for (auto &step : data::pathTrees[robotNum][depth]){
-                auto &lastIndex = step.lastIndex;
-                auto &lastStep = data::pathTrees[robotNum][depth-1][lastIndex];
-                step.frameSum = step.frame+lastStep.frameSum;
-                step.valueSum = step.value+lastStep.valueSum;
-            }
-        }
+        logger.writeInfo(s);
+        ++p;
     }
 }
