@@ -41,7 +41,6 @@ void selectPath(int RID){
                     if (ask.RID != RID && ask.RID != conflictRID){ // 发生了冲突，可能需要回溯
                         conflictRID = ask.RID;
                         if (valueSum < ask.value || (valueSum == ask.value && RID < ask.RID)){ // TODO:VALUE
-                            //logger.writeInfo("conflict", false);
                             asksPort.erase(asksPort.begin()+thisIndex);
                             valid = false;
                             goto out;
