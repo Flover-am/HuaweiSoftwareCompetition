@@ -2,6 +2,9 @@
 #define CODECRAFTSDK_EXCHANGE_H
 
 #include "data.h"
+#include "Logger.h"
+
+extern Logger logger;
 
 void exchange(int, int, int);
 void pushStep(int);

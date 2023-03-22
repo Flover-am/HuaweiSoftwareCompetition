@@ -51,13 +51,13 @@ void navigate(int RID, int SID){
     //TODO:倒行情况
 }
 
-double calculateTime(int RID, int SID, int OID, bool firstStep) {
+float calculateTime(int RID, int SID, int OID, bool firstStep) {
     station &s = data::stations[SID];
-    double distance, alpha = 0;
-    double sx = s.positionX, sy = s.positionY;
+    float distance, alpha = 0;
+    float sx = s.positionX, sy = s.positionY;
     if (firstStep){
         auto &r = data::robots[RID];
-        double rx = r.positionX, ry = r.positionY;
+        float rx = r.positionX, ry = r.positionY;
         distance = sqrt((sy-ry)*(sy-ry)+(sx-rx)*(sx-rx));
         alpha = atan2((sy-ry), (sx-rx))-r.direction;
         if (alpha >  PAI)   alpha -= 2*PAI;
@@ -65,15 +65,15 @@ double calculateTime(int RID, int SID, int OID, bool firstStep) {
     }
     else{
         auto &S = data::stations[RID];
-        double Sx = S.positionX, Sy = S.positionY;
+        float Sx = S.positionX, Sy = S.positionY;
         distance = sqrt((sy-Sy)*(sy-Sy)+(sx-Sx)*(sx-Sx));
     }
 
-    double marchTime = 50*(distance/V_MAX+abs(alpha)/OMEGA_MAX);
-    double awaitTime = 0;
+    float marchTime = 50*(distance/V_MAX+abs(alpha)/OMEGA_MAX);
+    float awaitTime = 0;
     if (OID < ONLY_SELL)
-        awaitTime = s.portAvailableTime[OID];
+        awaitTime = (float)(s.portAvailableTime[OID]);
 
-    double result = marchTime > awaitTime ? marchTime : awaitTime;
+    float result = marchTime > awaitTime ? marchTime : awaitTime;
     return result;
 }

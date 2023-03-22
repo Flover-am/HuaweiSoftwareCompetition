@@ -1,5 +1,20 @@
 #include "main.h"
 
+void outputPathTree(){
+    int i = 0;
+    for (auto &pathTree : data::pathTrees){
+        logger.writeInfo("RID: " + to_string(i)+ ":");
+        for (auto &steps : pathTree){
+            string s;
+            for (auto &step : steps){
+                s += to_string(step.SID) + " ";
+            }
+            logger.writeInfo(s);
+        }
+        i++;
+    }
+}
+
 int main() {
 
     initMap();
@@ -29,13 +44,14 @@ int main() {
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)       //  选择一条树中的路线
             selectPath(robotNum);
 
-        outputNowPath();
+        //outputNowPath();
+        //outputPathTree();
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
             int optIndex = data::optedPaths[robotNum][0];
             if (optIndex >= 0){
                 Step &step = data::pathTrees[robotNum][0][optIndex];    //  如果有下一步规划，准备行动
-                if (step.SID == data::robots[robotNum].stationID)       // 如果已经抵达目标,进行买卖命令
+                if (step.SID == data::robots[robotNum].stationID)  // 如果已经抵达目标,进行买卖命令
                     exchange(robotNum, step.SID, step.OID);
                 if (step.SID != data::robots[robotNum].stationID)
                     navigate(robotNum, step.SID);
@@ -61,7 +77,7 @@ void initMap() {
             if (symbol == '.')
                 continue;
 
-            double posX = (j+0.5)*TILE_SIZE, posY = (TILE_NUM-i-0.5)*TILE_SIZE;
+            float posX = (j+0.5)*TILE_SIZE, posY = (TILE_NUM-i-0.5)*TILE_SIZE;
             if (symbol == 'A'){
                 data::robots.emplace_back(robot++, posX, posY);
                 if (robot > ROBOT_NUM)
@@ -112,7 +128,7 @@ void readMessage() {
     ss >> data::frame >> data::money;
     getline(cin, line);
 
-    int skipInt;    double skipFloat;
+    int skipInt;    float skipFloat;
     for (auto &s : data::stations) {
         getline(cin, line);
         ss.clear();
@@ -126,12 +142,12 @@ void readMessage() {
             state = number%2;
             number /= 2;
         }
-        // 清空recvAskTime，等待本轮加载
+        // 清空recvAskTime与portAvailableTime，等待本轮加载
         vector<Ask> emptyAsk;
         s.portRecvAskTime.fill(emptyAsk);
-        // 读入portAvailableTime[0]
         for (int i = 1; i < 8; i++)
             s.portAvailableTime[i] = -1;
+        // 读入portAvailableTime[0]
         if (s.proState == 1)
             s.portAvailableTime[0] = 0;       // 当前可用
         else if (s.timeRemain != -1)
@@ -193,7 +209,7 @@ void refresh(){
             continue;
 
         int targetIndex = pathIndex[STEP_DEPTH-1];
-        double valueSum = data::pathTrees[robotNum][STEP_DEPTH-1][targetIndex].valueSum;
+        float valueSum = data::pathTrees[robotNum][STEP_DEPTH-1][targetIndex].valueSum;
 
         for (int depth = 0; depth < STEP_DEPTH; ++depth){
             auto &stepIndex = pathIndex[depth];
@@ -223,8 +239,8 @@ void refresh(){
                     recvTime = asks[2][0].timeStamp > recvTime?
                                asks[2][0].timeStamp : recvTime;
                 if (ports[0] == -1){        //如果没有被阻塞
-                    ports[1] = recvTime;
-                    ports[2] = recvTime;
+                    if (ports[1] == -1) ports[1] = recvTime;
+                    if (ports[2] == -1) ports[2] = recvTime;
                     ports[0] = recvTime+MEDIUM_TIME;
                 }
             }
@@ -239,8 +255,8 @@ void refresh(){
                     recvTime = asks[3][0].timeStamp > recvTime?
                                asks[3][0].timeStamp : recvTime;
                 if (ports[0] == -1){        //如果没有被阻塞
-                    ports[1] = recvTime;
-                    ports[3] = recvTime;
+                    if (ports[1] == -1) ports[1] = recvTime;
+                    if (ports[3] == -1) ports[3] = recvTime;
                     ports[0] = recvTime+MEDIUM_TIME;
                 }
             }
@@ -255,8 +271,8 @@ void refresh(){
                     recvTime = asks[3][0].timeStamp > recvTime?
                                asks[3][0].timeStamp : recvTime;
                 if (ports[0] == -1){        //如果没有被阻塞
-                    ports[2] = recvTime;
-                    ports[3] = recvTime;
+                    if (ports[2] == -1) ports[2] = recvTime;
+                    if (ports[3] == -1) ports[3] = recvTime;
                     ports[0] = recvTime+MEDIUM_TIME;
                 }
             }
@@ -275,9 +291,9 @@ void refresh(){
                     recvTime = asks[6][0].timeStamp > recvTime?
                                asks[6][0].timeStamp : recvTime;
                 if (ports[0] == -1){        //如果没有被阻塞
-                    ports[4] = recvTime;
-                    ports[5] = recvTime;
-                    ports[6] = recvTime;
+                    if (ports[4] == -1) ports[4] = recvTime;
+                    if (ports[5] == -1) ports[5] = recvTime;
+                    if (ports[6] == -1) ports[6] = recvTime;
                     ports[0] = recvTime+LONG_TIME;
                 }
             }

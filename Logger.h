@@ -6,7 +6,7 @@
 using namespace std;
 
 class Logger {
-private:
+
     string logger_file;
     ofstream out;
 
@@ -14,7 +14,6 @@ private:
 
 public:
     Logger();
-
     void writeInfo(const string &in_message);
     void writeError(const string &in_message);
     ~Logger();

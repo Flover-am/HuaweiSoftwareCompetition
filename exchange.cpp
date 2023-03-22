@@ -10,12 +10,14 @@ void exchange(int RID, int SID, int OID){
     bool success = false;               // 由于可能需要等待，需要判定是否操作成功
 
     if (OID != ONLY_BUY){
+        logger.writeInfo(to_string(s.portAvailableTime[r.item]));
         if (s.portAvailableTime[r.item] == 0){
             printf("sell %d\n", RID);   // 如果可卖，则卖出物品
             success = true;
         }
     }
     if (!success){
+        logger.writeInfo(to_string(s.portAvailableTime[0]));
         if (s.portAvailableTime[0] == 0){
             printf("buy %d\n", RID);    // 如果可买，则购进原料
             success = true;
@@ -32,8 +34,10 @@ void pushStep(int RID){
     // 计算每层路径保留的范围的距离
     array<int, STEP_DEPTH> beginIndex{};
     array<int, STEP_DEPTH> endIndex{};
+
     for (int depth = 0; depth < STEP_DEPTH; ++depth) {
         int width = pathTree[depth].size();
+        endIndex[depth] = width;
         bool start = false;
         for (int i = 0; i < width; ++i){
 
@@ -71,5 +75,6 @@ void pushStep(int RID){
         newTree[depth] = newTree[depth+1];
     newTree[STEP_DEPTH-1].clear();
     pathTree = newTree;
+
 }
 #pragma clang diagnostic pop

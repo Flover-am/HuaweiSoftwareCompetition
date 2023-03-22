@@ -15,6 +15,6 @@
 void selectPath(int);
 void setPathTree(int);
 vector<Step> findStation(int, int, int, bool);
-pair<double, double> calculateValue(int, int, int, bool);
+pair<float, float> calculateValue(int, int, int, bool);
 
 #endif //CODECRAFTSDK_PATHPLANNING_H

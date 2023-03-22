@@ -9,7 +9,7 @@ void selectPath(int RID){
     //logger.writeInfo("robot: "+ to_string(RID));
     for (int i = 0; i < width; ++i) {
         bool valid = true;
-        double valueSum = pathTree[STEP_DEPTH-1][i].valueSum;
+        float valueSum = pathTree[STEP_DEPTH-1][i].valueSum;
 
         int index = i;
         for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
@@ -64,7 +64,7 @@ void selectPath(int RID){
             weights.emplace_back(0);
             continue;
         }
-        double weight = 0;
+        float weight = 0;
         int index = i;
         for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
             weight += pathTree[depth][index].value;
@@ -77,6 +77,13 @@ void selectPath(int RID){
     for (int i = 0; i < width; ++i)
         if (weights[i] > weights[pathIndex])
             pathIndex = i;
+    bool valid = false;
+    for (int i = 0; i < width; ++i){
+        valid = valid || valids[i];
+    }
+    if (!valid){
+        logger.writeInfo("false");
+    }
     /*string s;
     for (int i = 0; i < width; ++i){
         if (i != pathIndex)
@@ -106,13 +113,13 @@ void setPathTree(int RID) {
         // 如果需要从头构建
         if (depth == 0){
             auto steps = findStation(RID, r.item, 0, true);
-            double maxValue = 0;
+            float maxValue = 0;
             for (auto &step : steps)
                 maxValue = step.value > maxValue ? step.value : maxValue;
 
             for (auto &step : steps){
-                if (step.value*FACTOR < maxValue)
-                    continue;
+                /*if (step.value*FACTOR < maxValue)
+                    continue;*/
                 pathTree[depth].emplace_back(step);
             }
         }
@@ -131,16 +138,16 @@ void setPathTree(int RID) {
                 lastIndex++;
             }
             // 去除不合标准的step
-            double maxValue = 0;
+            float maxValue = 0;
             for (auto &step : tmpSteps)
                 maxValue = step.value > maxValue ? step.value : maxValue;
             auto size = tmpSteps.size();
-            for (int i = 0, index = 0; i < size; ++i){
+            /*for (int i = 0, index = 0; i < size; ++i){
                 if (tmpSteps[index].value*FACTOR < maxValue)
                     tmpSteps.erase(tmpSteps.begin()+index);
                 else
                     ++index;
-            }
+            }*/
             // 写入
             pathTree[depth] = tmpSteps;
             for (int index = 0; index < pathTree[depth].size(); ++index){
@@ -162,7 +169,7 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
             // 如果机器人空闲，寻找可以生产商品的工作台
             if (s.type <= 7){
                 if (s.portAvailableTime[0] != -1){ //TODO: ?
-                    pair<double, double> value = calculateValue(RID, s.id, ONLY_BUY, firstStep);
+                    pair<float, float> value = calculateValue(RID, s.id, ONLY_BUY, firstStep);
                     vector<int> newNext;
                     Step newStep{s.id, ONLY_BUY,
                                  (int)value.first, (int)value.first,
@@ -176,7 +183,7 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
         for (int &SID : data::receiveStationIDs[IID]) {
             auto &s = data::stations[SID];
             if (s.type == 8 || s.type == 9){
-                pair<double, double> value = calculateValue(RID, s.id, ONLY_SELL, firstStep);
+                pair<float, float> value = calculateValue(RID, s.id, ONLY_SELL, firstStep);
                 vector<int> newNext;
                 Step newStep{s.id, ONLY_SELL,
                              (int)value.first,(int)value.first,
@@ -186,7 +193,7 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
             }
 
             else{
-                pair<double, double> value = calculateValue(RID, s.id, IID, firstStep);
+                pair<float, float> value = calculateValue(RID, s.id, IID, firstStep);
                 vector<int> newNext;
                 Step newStep{s.id, IID,
                              (int)value.first, (int)value.first,
@@ -199,9 +206,9 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
     // TODO: 算法优化
     return stations;
 }
-pair<double, double> calculateValue(int RID, int SID, int OID, bool firstStep){
+pair<float, float> calculateValue(int RID, int SID, int OID, bool firstStep){
     station &s = data::stations[SID];
-    pair<double, double> value;
+    pair<float, float> value;
     value.first = calculateTime(RID, SID, OID, firstStep);
     value.second = 0;
     if (OID == ONLY_BUY){

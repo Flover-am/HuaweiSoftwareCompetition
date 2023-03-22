@@ -28,23 +28,23 @@ public:
     int stationID{-1};
     int item{0};
 
-    double r{R_SMALL};
-    double m{M_SMALL};
-    double a{A_SMALL};
-    double alpha{ALPHA_SMALL};
+    float r{R_SMALL};
+    float m{M_SMALL};
+    float a{A_SMALL};
+    float alpha{ALPHA_SMALL};
 
-    double tValue{0}; // timeValue
-    double hValue{0}; // hitValue
+    float tValue{0}; // timeValue
+    float hValue{0}; // hitValue
 
-    double angleV{0};
-    double lineVX{0};
-    double lineVY{0};
+    float angleV{0};
+    float lineVX{0};
+    float lineVY{0};
 
-    double direction{0};
-    double positionX;
-    double positionY;
+    float direction{0};
+    float positionX;
+    float positionY;
 
-    robot(int, double, double);
+    robot(int, float, float);
     robot();
 };
 

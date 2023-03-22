@@ -24,8 +24,8 @@ struct Step {
     int OID{-1};
     int frame{-1};
     int frameSum{-1};
-    double value{0};
-    double valueSum{0};
+    float value{0};
+    float valueSum{0};
     int lastIndex{-1};
     vector<int> nextIndex;
 };
@@ -42,10 +42,6 @@ public:
     static array<array<int, STEP_DEPTH>, ROBOT_NUM> optedPaths;
     // 存放可以接受各种物品作为原料的所有工作台
     static array<vector<int>, 8> receiveStationIDs;
-
-    /*static string optedPathsToString(){
-        string s;
-    }*/
 
 };
 
