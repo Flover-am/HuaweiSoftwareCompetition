@@ -16,51 +16,43 @@ int main() {
 
 
     for (int frame = 1; frame <= FRAME_NUM; ++frame) {
-
-        readMessage();
-        refresh(); // 刷新station.portAvailableTime
+        readMessage();  // 清空portRecvAskTime, 从输入加载portAvailableTime
+        refresh();      // 从optedPath加载portRecvAskTime, 覆写portAvailableTime
         printf("%d\n", data::frame);
 
-        for (auto &station : data::stations){
-            string str = to_string(station.id) + "\n";
-            for (int o = 0; o < 8; ++o){
-                for (auto &ask : station.portRecvAskTime[o]){
-                    str += "port" + to_string(o) + ": " + to_string(ask.RID) + " "
-                            + to_string(ask.timeStamp) + " "
-                            + to_string(ask.value) + "\n";
-                }
-            }
-            logger.writeInfo(str,false);
-        }
-
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
-            if (data::pathTrees[robotNum][STEP_DEPTH-1].empty())      //  如果树不完全，准备规划路线
+            if (data::pathTrees[robotNum][STEP_DEPTH-1].empty())        //  如果树不完全，准备规划路线
                 setPathTree(robotNum);
+
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)       //  选择一条树中的路线
             selectPath(robotNum);
 
-        int p = 0;
-        for (auto &pathIndex : data::optedPaths){
-            string s;
-            int x = 0;
-            for (auto &stepIndex : pathIndex){
-                auto steps = data::pathTrees[p][x];
-                s += to_string(steps[stepIndex].SID) + " ";
-                ++x;
+        {
+            logger.writeInfo("frame: "+to_string(data::frame), false);
+            int p = 0;
+            for (auto &pathIndex : data::optedPaths){
+                string s;
+                int x = 0;
+                for (auto &stepIndex : pathIndex){
+                    auto steps = data::pathTrees[p][x];
+                    s += "SID: " + to_string(steps[stepIndex].SID) + "\t";
+                    if (x == 2)
+                        s += to_string(steps[stepIndex].valueSum) + " " + to_string(stepIndex);
+                    ++x;
+                }
+                logger.writeInfo(s, false);
+                ++p;
             }
-            logger.writeInfo(s, false);
-            ++p;
         }
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
             int optIndex = data::optedPaths[robotNum][0];
             if (optIndex != -1){
                 Step &step = data::pathTrees[robotNum][0][optIndex];    //  如果有下一步规划，准备行动
+                navigate(robotNum, step.SID);
                 if (step.SID == data::robots[robotNum].stationID)       // 如果已经抵达目标,进行买卖命令
                     exchange(robotNum, step.SID, step.OID);
-                if (step.SID != data::robots[robotNum].stationID)       // 如果有Destination且尚未抵达,进行移动命令
-                    navigate(robotNum, step.SID);
             }
         }
         puts("OK");
@@ -139,7 +131,7 @@ void readMessage() {
         ss.clear();
         ss.str(line);
 
-        int number, proState;
+        int number;
         array<int ,8> matState{};
         ss >> skipInt >> skipFloat >> skipFloat;
         ss >> s.timeRemain >> number >> s.proState;
@@ -155,10 +147,8 @@ void readMessage() {
             s.portAvailableTime[i] = -1;
         if (s.proState == 1)
             s.portAvailableTime[0] = 0;       // 当前可用
-        else if (s.timeRemain != -1){
+        else if (s.timeRemain != -1)
             s.portAvailableTime[0] = s.timeRemain;
-
-        }
         else
             s.portAvailableTime[0] = -1;
     }
@@ -198,6 +188,9 @@ void refresh(){
         if (pathIndex[STEP_DEPTH-1] == -1)
             continue;
 
+        int targetIndex = pathIndex[STEP_DEPTH-1];
+        double valueSum = data::pathTrees[robotNum][STEP_DEPTH-1][targetIndex].valueSum;
+
         for (int depth = 0; depth < STEP_DEPTH; ++depth){
             auto &stepIndex = pathIndex[depth];
             auto &step = data::pathTrees[robotNum][depth][stepIndex];
@@ -205,13 +198,13 @@ void refresh(){
                 continue;
 
             auto &station = data::stations[step.SID];
-            Ask ask{robotNum, step.frameSum, step.valueSum};
+            Ask ask{robotNum, step.frameSum, valueSum};
             station.portRecvAskTime[step.OID].emplace_back(ask);
         }
     }
     // 根据receiveAskTime覆写portAvailableTime
     for (auto &station : data::stations){
-        int recvTime = data::frame;
+        int recvTime = -1;
         auto &ports = station.portAvailableTime;
         auto &asks = station.portRecvAskTime;
 
@@ -286,5 +279,21 @@ void refresh(){
             }
         }
     }
+    // 刷新权值与时间戳
+    for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
+        for (auto &step : data::pathTrees[robotNum][0]){
+            int SID = step.SID, OID = step.OID;
+            pair<float, float> value = calculateValue(robotNum, SID, OID, true);
+            step.frame = step.frameSum = (int)value.first;
+            step.value = step.valueSum = value.second;
+        }
+        for (int depth = 1; depth < STEP_DEPTH; ++depth){
+            for (auto &step : data::pathTrees[robotNum][depth]){
+                auto &lastIndex = step.lastIndex;
+                auto &lastStep = data::pathTrees[robotNum][depth-1][lastIndex];
+                step.frameSum = step.frame+lastStep.frameSum;
+                step.valueSum = step.value+lastStep.valueSum;
+            }
+        }
+    }
 }
-

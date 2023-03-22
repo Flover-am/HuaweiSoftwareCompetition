@@ -27,18 +27,49 @@ void exchange(int RID, int SID, int OID){
 }
 void pushStep(int RID){
     array<vector<Step>, STEP_DEPTH> &pathTree = data::pathTrees[RID];
-    for (int depth = 0; depth < STEP_DEPTH-1; ++depth)
-        pathTree[depth] = pathTree[depth + 1];
-    pathTree[STEP_DEPTH-1].clear();
+    int stepID = data::optedPaths[RID][0];
 
-    /*// TODO:剪枝
-    int width = 1;
-    for (int depth = 0; depth < STEP_DEPTH-1; ++depth){
-        int size = pathTree[depth].size();
-        for (int i = width; i < size; ++i)
-            pathTree[depth].pop_back();
-        auto nextIndex = pathTree[depth][width - 1].nextIndex;
-        width = nextIndex[nextIndex.size()-1];
-    }*/
+    // 计算每层路径保留的范围的距离
+    array<int, STEP_DEPTH> beginIndex{};
+    array<int, STEP_DEPTH> endIndex{};
+    for (int depth = 0; depth < STEP_DEPTH; ++depth) {
+        int width = pathTree[depth].size();
+        bool start = false;
+        for (int i = 0; i < width; ++i){
+
+            int ancestorIndex = i;                  // 找到这个节点的祖先
+            for (int k = depth; k > 0; --k)
+                ancestorIndex = pathTree[k][ancestorIndex].lastIndex;
+
+            if (!start && ancestorIndex == stepID) {
+                start = true;
+                beginIndex[depth] = i;
+            }
+            if ( start && ancestorIndex != stepID) {
+                endIndex[depth] = i;
+                break;
+            }
+        }
+    }
+    // 构建新树
+    array<vector<Step>, STEP_DEPTH> newTree;
+    for (int depth = 0; depth < STEP_DEPTH; ++depth) {
+        vector<Step> newSteps;
+        for (int i = beginIndex[depth]; i < endIndex[depth]; ++i){
+            Step newStep = pathTree[depth][i];
+            if (depth > 0)
+                newStep.lastIndex -= beginIndex[depth-1];
+            if (depth < STEP_DEPTH-1)
+                for (int &next : newStep.nextIndex)
+                    next -= beginIndex[depth+1];
+            newSteps.emplace_back(newStep);
+        }
+        newTree[depth] = newSteps;
+    }
+
+    for (int depth = 0; depth < STEP_DEPTH-1; ++depth)
+        newTree[depth] = newTree[depth+1];
+    newTree[STEP_DEPTH-1].clear();
+    pathTree = newTree;
 }
 #pragma clang diagnostic pop

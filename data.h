@@ -20,7 +20,6 @@
 using namespace std;
 
 struct Step {
-    bool valid{true};
     int SID{-1};
     int OID{-1};
     int frame{-1};
@@ -28,7 +27,7 @@ struct Step {
     double value{0};
     double valueSum{0};
     int lastIndex{-1};
-    vector<int> nextIndex{-1};
+    vector<int> nextIndex;
 };
 
 class data {

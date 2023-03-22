@@ -1,86 +1,60 @@
 #include "pathPlanning.h"
-void selectPath(int RID){
 
+void selectPath(int RID){
     auto &pathTree = data::pathTrees[RID];
     vector<float> weights;
     vector<bool> valids;
-    // 刷新权值与时间戳
-    for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
-        for (auto &step : data::pathTrees[robotNum][0]){
-            int SID = step.SID, OID = step.OID;
-            pair<float, float> value = calculateValue(RID, SID, OID, true);
-            step.frame = step.frameSum = (int)value.first;
-            step.value = step.valueSum = value.second;
-        }
-        for (int depth = 1; depth < STEP_DEPTH; ++depth){
-            for (auto &step : data::pathTrees[robotNum][depth]){
-                auto &lastIndex = step.lastIndex;
-                auto &lastStep = data::pathTrees[robotNum][depth-1][lastIndex];
-                step.frameSum = step.frame+lastStep.frameSum;
-                step.valueSum = step.value+lastStep.valueSum;
-            }
-        }
-    }
+
     auto width = pathTree[STEP_DEPTH-1].size();
-    // 冲突检测: 初始化
-    for (auto &steps : pathTree)
-        for (auto &step : steps)
-            step.valid = true;
-    // 加载
-    for (auto &steps : pathTree)
-        for (auto &step : steps) {
+    for (int i = 0; i < width; ++i) {
+        bool valid = true;
+        double valueSum = pathTree[STEP_DEPTH-1][i].valueSum;
+
+        int index = i;
+        for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
+            auto &step = pathTree[depth][index];
             // 如果只卖，不会发生冲突
-            if (step.OID == ONLY_SELL){
-                logger.writeInfo("ONLY SELL", false);
+            if (step.OID == ONLY_SELL)
                 continue;
-            }
             // 如果端口不可用
             auto &station = data::stations[step.SID];
             if (station.portAvailableTime[step.OID] == -1){
-                logger.writeInfo("INVALID", false);
-                step.valid = false;
+                valid = false;
+                break;
             }
-            // TODO: bug here如果发生冲突
-            auto &asks = station.portRecvAskTime[step.OID];
-            auto size = asks.size();
 
-            if (size > 1){ //有冲突可能
-                logger.writeInfo("CONFLICT", false);
-                for (auto &ask : asks)
-                    logger.writeInfo(to_string(ask.RID), false);
-
-                int thisIndex = 0; // 找到本step的对应请求号
-                for (int i = 0; i < asks.size(); ++i)
-                    if (RID == asks[i].RID && step.frameSum == asks[i].timeStamp){
-                        thisIndex = i;
+            auto &asksPort = station.portRecvAskTime[step.OID];
+            auto size = asksPort.size();
+            if (size > 0){ //有冲突可能
+                int thisIndex = -1; // 找到本step的对应请求号
+                for (int j = 0; j < asksPort.size(); ++j)
+                    if (RID == asksPort[j].RID && step.frameSum == asksPort[j].timeStamp){
+                        thisIndex = j;
                         break;
                     }
+                if (thisIndex == -1){   // 没有本step对应的请求
+                    valid = false;
+                    break;
+                }
                 int conflictRID = -1;
-                for (auto &ask : asks)
-                    if (ask.RID != RID && ask.RID != conflictRID){
+                for (auto &ask : asksPort)
+                    if (ask.RID != RID && ask.RID != conflictRID){ // 发生了冲突，可能需要回溯
                         conflictRID = ask.RID;
-                        if (ask.value >= step.value){ // TODO:VALUE
-                            asks.erase(asks.begin()+thisIndex);
-                            step.valid = false;
-                            break;
+                        if (valueSum < ask.value || (valueSum == ask.value && RID < ask.RID)){ // TODO:VALUE
+                            //logger.writeInfo("conflict", false);
+                            asksPort.erase(asksPort.begin()+thisIndex);
+                            valid = false;
+                            goto out;
                         }
                     }
             }
-        }
-    // 写入
-    for (int i = 0; i < width; ++i){
-        int index = i;
-        bool valid = true;
-        for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
-            auto &step = pathTree[depth][index];
-            valid = valid && step.valid;
-            index = step.lastIndex;
 
+            index = step.lastIndex;
         }
-        valids.emplace_back(valid);
+        out : valids.emplace_back(valid);
     }
     // 将权值加和
-    for (int i = 0; i < width; ++i){
+    for (int i = 0; i < width; ++i) {
         if (!valids[i]){
             weights.emplace_back(0);
             continue;
@@ -102,6 +76,7 @@ void selectPath(int RID){
         data::optedPaths[RID][depth] = pathIndex;
         pathIndex = pathTree[depth][pathIndex].lastIndex;
     }
+
 }
 void setPathTree(int RID) {
     robot &r = data::robots[RID];
@@ -177,7 +152,7 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
                 if (s.portAvailableTime[0] != -1){ //TODO: ?
                     pair<double, double> value = calculateValue(RID, s.id, ONLY_BUY, firstStep);
                     vector<int> newNext;
-                    Step newStep{true, s.id, ONLY_BUY,
+                    Step newStep{s.id, ONLY_BUY,
                                  (int)value.first, (int)value.first,
                                  value.second, value.second,
                                  lastIndex, newNext};
@@ -191,7 +166,7 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
             if (s.type == 8 || s.type == 9){
                 pair<double, double> value = calculateValue(RID, s.id, ONLY_SELL, firstStep);
                 vector<int> newNext;
-                Step newStep{true, s.id, ONLY_SELL,
+                Step newStep{s.id, ONLY_SELL,
                              (int)value.first,(int)value.first,
                              value.second, value.second,
                              lastIndex, newNext};
@@ -201,7 +176,7 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
             else{
                 pair<double, double> value = calculateValue(RID, s.id, IID, firstStep);
                 vector<int> newNext;
-                Step newStep{true, s.id, IID,
+                Step newStep{s.id, IID,
                              (int)value.first, (int)value.first,
                              value.second, value.second,
                              lastIndex, newNext};
