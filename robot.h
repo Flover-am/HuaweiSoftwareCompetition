@@ -22,6 +22,9 @@
 #define PROD_SELL_6 6
 #define ONLY_SELL 7
 
+#include <string>
+#include <sstream>
+
 class robot {
 public:
     int ID{-1};
@@ -45,7 +48,14 @@ public:
     float positionY;
 
     robot(int, float, float);
+
     robot();
+
+    explicit operator std::string() const {
+        std::stringstream ss("");
+        ss << "Robot " << ID << " \n\t: angleV:" << angleV << ", lineVX: " << lineVX << ", lineVY: " << lineVY
+           << " ,pos_X: " << positionX << " , pos_Y: " << positionY;
+    }
 };
 
 #endif //HUAWEISOFTWARECOMPETITION_ROBOT_H

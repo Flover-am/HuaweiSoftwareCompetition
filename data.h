@@ -17,6 +17,7 @@
 
 #define STEP_DEPTH 2
 
+#define TIME_COLL 0.5
 using namespace std;
 
 class data {

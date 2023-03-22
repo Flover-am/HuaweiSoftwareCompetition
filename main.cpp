@@ -7,7 +7,7 @@
 #include "workStation.h"
 #include "data.h"
 #include "Logger.h"
-
+#include "avoidCollision.h"
 #include "pathPlanning.h"
 #include "conflictRecall.h"
 #include "navigate.h"
@@ -26,6 +26,7 @@ array<vector<int>, 8> data::receiveStationIDs;
 Logger logger = *new Logger(false);
 
 void initMap();
+
 void readMessage();
 
 int main() {
@@ -45,28 +46,37 @@ int main() {
     for (int frame = 0; frame < FRAME_NUM; ++frame) {
         readMessage();
         printf("%d\n", data::frame++);
+        logger.writeInfo(to_string(frame), false);
+        if (frame > 500 && avoidCollision::judgeColl()) {
 
+            logger.writeInfo(
+                    ": ----------------------------------------------------------------------------------------------------------------"
+                    " \n           frame:" + to_string(frame), false);
+            goto out;
+        }
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
             // 如果需要购买，检测之后是否存在新的出售冲突
-            if (ONLY_BUY == data::destList[robotNum][STEP_DEPTH-1].second){
-                auto SID = data::destList[robotNum][STEP_DEPTH-1].first;
+            if (ONLY_BUY == data::destList[robotNum][STEP_DEPTH - 1].second) {
+                auto SID = data::destList[robotNum][STEP_DEPTH - 1].first;
                 detectConflict(robotNum, data::workStations[SID].type);
             }
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
-            if (data::destList[robotNum][STEP_DEPTH-1].first < 0)      //  如果规划不完全，准备规划路线
+            if (data::destList[robotNum][STEP_DEPTH - 1].first < 0)      //  如果规划不完全，准备规划路线
                 setDestination(robotNum);
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
-            if (data::destList[robotNum][0].first >= 0){               //  如果有下一步规划，准备行动
+            if (data::destList[robotNum][0].first >= 0) {               //  如果有下一步规划，准备行动
                 if (data::destList[robotNum][0].first == data::robots[robotNum].stationID)   // 如果已经抵达目标,进行买卖命令
                     exchange(robotNum, data::destList[robotNum][0]);
-                if (data::destList[robotNum][0].first != data::robots[robotNum].stationID)   // 如果有Destination且尚未抵达,进行移动命令
+                if (data::destList[robotNum][0].first !=
+                    data::robots[robotNum].stationID)   // 如果有Destination且尚未抵达,进行移动命令
                     navigate(robotNum, data::destList[robotNum][0].first);
             }
-
+        out:
         puts("OK");
         fflush(stdout);
     }
+    over:
     return 0;
 }
 
@@ -83,38 +93,32 @@ void initMap() {
             if (symbol == '.')
                 continue;
 
-            float posX = (j+0.5)*TILE_SIZE, posY = (TILE_NUM-i-0.5)*TILE_SIZE;
-            if (symbol == 'A'){
+            float posX = (j + 0.5) * TILE_SIZE, posY = (TILE_NUM - i - 0.5) * TILE_SIZE;
+            if (symbol == 'A') {
                 data::robots.emplace_back(robot++, posX, posY);
                 if (robot > ROBOT_NUM)
                     logger.writeError("Robot more than 4.", true);
-            }
-            else if (isdigit(symbol))
-                data::workStations.emplace_back(symbol-'0', workStation++, posX, posY);
+            } else if (isdigit(symbol))
+                data::workStations.emplace_back(symbol - '0', workStation++, posX, posY);
         }
     }
-    for (const auto &station : data::workStations) {
-        if (station.type == 4){
+    for (const auto &station: data::workStations) {
+        if (station.type == 4) {
             data::receiveStationIDs[1].emplace_back(station.id);
             data::receiveStationIDs[2].emplace_back(station.id);
-        }
-        else if (station.type == 5){
+        } else if (station.type == 5) {
             data::receiveStationIDs[1].emplace_back(station.id);
             data::receiveStationIDs[3].emplace_back(station.id);
-        }
-        else if (station.type == 6){
+        } else if (station.type == 6) {
             data::receiveStationIDs[2].emplace_back(station.id);
             data::receiveStationIDs[3].emplace_back(station.id);
-        }
-        else if (station.type == 7){
+        } else if (station.type == 7) {
             data::receiveStationIDs[4].emplace_back(station.id);
             data::receiveStationIDs[5].emplace_back(station.id);
             data::receiveStationIDs[6].emplace_back(station.id);
-        }
-        else if (station.type == 8){
+        } else if (station.type == 8) {
             data::receiveStationIDs[7].emplace_back(station.id);
-        }
-        else if (station.type == 9){
+        } else if (station.type == 9) {
             data::receiveStationIDs[1].emplace_back(station.id);
             data::receiveStationIDs[2].emplace_back(station.id);
             data::receiveStationIDs[3].emplace_back(station.id);
@@ -125,6 +129,7 @@ void initMap() {
         }
     }
 }
+
 void readMessage() {
     string line;
     getline(cin, line);
@@ -132,32 +137,32 @@ void readMessage() {
     ss >> data::frame >> data::money;
     getline(cin, line);
 
-    int skipInt = 0;    float skipFloat = 0;
-    for (auto &s : data::workStations) {
+    int skipInt = 0;
+    float skipFloat = 0;
+    for (auto &s: data::workStations) {
         int number;
         getline(cin, line);
         ss.clear();
         ss.str(line);
         ss >> skipInt >> skipFloat >> skipFloat;
         ss >> s.timeRemain >> number >> s.proState;
-        for (auto &state : s.matState){
-            state = number%2;
+        for (auto &state: s.matState) {
+            state = number % 2;
             number /= 2;
         }
     }
-    for (auto &r : data::robots) {
+    for (auto &r: data::robots) {
         getline(cin, line);
         ss.clear();
         ss.str(line);
         ss >> r.stationID >> r.item >> r.tValue >> r.hValue;
         ss >> r.angleV >> r.lineVX >> r.lineVY >> r.direction >> r.positionX >> r.positionY;
-        if(r.item != 0){
+        if (r.item != 0) {
             r.r = R_BIG;
             r.m = M_BIG;
             r.a = A_BIG;
             r.alpha = ALPHA_BIG;
-        }
-        else{
+        } else {
             r.r = R_SMALL;
             r.m = M_SMALL;
             r.a = A_SMALL;

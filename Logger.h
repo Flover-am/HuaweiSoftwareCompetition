@@ -14,7 +14,7 @@ private:
 public:
     Logger(bool is_append);
 
-    void writeInfo(const string &in_message, bool mod);
+    void writeInfo(const string &in_message, bool mod = false);
     void writeError(const string &in_message, bool mod);
 };
 
