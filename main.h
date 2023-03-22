@@ -12,7 +12,6 @@
 #include "Logger.h"
 
 #include "pathPlanning.h"
-#include "conflictRecall.h"
 #include "navigate.h"
 #include "exchange.h"
 
@@ -20,13 +19,14 @@ using namespace std;
 
 void initMap();
 void readMessage();
+void refresh();
 
 int data::frame;
 int data::money;
 vector<robot> data::robots;
 vector<station> data::stations;
 array<array<vector<Step>, STEP_DEPTH>, ROBOT_NUM> data::pathTrees;
-array<int, ROBOT_NUM> data::pathNums;
+array<array<int, STEP_DEPTH>, ROBOT_NUM>  data::optedPaths;
 
 array<vector<int>, 8> data::receiveStationIDs;
 Logger logger = *new Logger(false);

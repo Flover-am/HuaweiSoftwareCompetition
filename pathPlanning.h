@@ -9,10 +9,12 @@
 #include "navigate.h"
 #include "material.h"
 
+#define FACTOR 3.0
+
 // 规划路线的函数
 void selectPath(int);
 void setPathTree(int);
 vector<Step> findStation(int, int, int, bool);
-pair<float, float> calculateValue(int, int, int, bool);
+pair<double, double> calculateValue(int, int, int, bool);
 
 #endif //CODECRAFTSDK_PATHPLANNING_H

@@ -10,13 +10,13 @@ void exchange(int RID, int SID, int OID){
     bool success = false;               // 由于可能需要等待，需要判定是否操作成功
 
     if (OID != ONLY_BUY){
-        if (s.matState[r.item] == 0){
+        if (s.portAvailableTime[r.item] == 0){
             printf("sell %d\n", RID);   // 如果可卖，则卖出物品
             success = true;
         }
     }
     if (!success){
-        if (s.proState == 1){
+        if (s.portAvailableTime[0] == 0){
             printf("buy %d\n", RID);    // 如果可买，则购进原料
             success = true;
         }
@@ -31,7 +31,7 @@ void pushStep(int RID){
         pathTree[depth] = pathTree[depth + 1];
     pathTree[STEP_DEPTH-1].clear();
 
-    //剪枝
+    /*// TODO:剪枝
     int width = 1;
     for (int depth = 0; depth < STEP_DEPTH-1; ++depth){
         int size = pathTree[depth].size();
@@ -39,6 +39,6 @@ void pushStep(int RID){
             pathTree[depth].pop_back();
         auto nextIndex = pathTree[depth][width - 1].nextIndex;
         width = nextIndex[nextIndex.size()-1];
-    }
+    }*/
 }
 #pragma clang diagnostic pop

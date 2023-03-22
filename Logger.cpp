@@ -26,7 +26,7 @@ Logger::Logger(bool is_append) {
 }
 
 void Logger::writeInfo(const string &in_message, bool mod) {
-    string message = "INFO: " + in_message;
+    string message = /*"INFO: " +*/ in_message;
     writeLog(message, mod);
 }
 void Logger::writeError(const string &in_message, bool mod) {

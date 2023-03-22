@@ -1,42 +1,91 @@
 #include "pathPlanning.h"
 void selectPath(int RID){
+
     auto &pathTree = data::pathTrees[RID];
     vector<float> weights;
-    vector<bool> available;
-    // TODO: 刷新权值
-    int width = pathTree[STEP_DEPTH-1].size();
-    // 冲突检测
+    vector<bool> valids;
+    // 刷新权值与时间戳
+    for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
+        for (auto &step : data::pathTrees[robotNum][0]){
+            int SID = step.SID, OID = step.OID;
+            pair<float, float> value = calculateValue(RID, SID, OID, true);
+            step.frame = step.frameSum = (int)value.first;
+            step.value = step.valueSum = value.second;
+        }
+        for (int depth = 1; depth < STEP_DEPTH; ++depth){
+            for (auto &step : data::pathTrees[robotNum][depth]){
+                auto &lastIndex = step.lastIndex;
+                auto &lastStep = data::pathTrees[robotNum][depth-1][lastIndex];
+                step.frameSum = step.frame+lastStep.frameSum;
+                step.valueSum = step.value+lastStep.valueSum;
+            }
+        }
+    }
+    auto width = pathTree[STEP_DEPTH-1].size();
+    // 冲突检测: 初始化
+    for (auto &steps : pathTree)
+        for (auto &step : steps)
+            step.valid = true;
+    // 加载
+    for (auto &steps : pathTree)
+        for (auto &step : steps) {
+            // 如果只卖，不会发生冲突
+            if (step.OID == ONLY_SELL){
+                logger.writeInfo("ONLY SELL", false);
+                continue;
+            }
+            // 如果端口不可用
+            auto &station = data::stations[step.SID];
+            if (station.portAvailableTime[step.OID] == -1){
+                logger.writeInfo("INVALID", false);
+                step.valid = false;
+            }
+            // TODO: bug here如果发生冲突
+            auto &asks = station.portRecvAskTime[step.OID];
+            auto size = asks.size();
+
+            if (size > 1){ //有冲突可能
+                logger.writeInfo("CONFLICT", false);
+                for (auto &ask : asks)
+                    logger.writeInfo(to_string(ask.RID), false);
+
+                int thisIndex = 0; // 找到本step的对应请求号
+                for (int i = 0; i < asks.size(); ++i)
+                    if (RID == asks[i].RID && step.frameSum == asks[i].timeStamp){
+                        thisIndex = i;
+                        break;
+                    }
+                int conflictRID = -1;
+                for (auto &ask : asks)
+                    if (ask.RID != RID && ask.RID != conflictRID){
+                        conflictRID = ask.RID;
+                        if (ask.value >= step.value){ // TODO:VALUE
+                            asks.erase(asks.begin()+thisIndex);
+                            step.valid = false;
+                            break;
+                        }
+                    }
+            }
+        }
+    // 写入
     for (int i = 0; i < width; ++i){
-        bool conflict = false;
         int index = i;
+        bool valid = true;
         for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
             auto &step = pathTree[depth][index];
-            if (step.OID == ONLY_SELL)  // 如果只卖，不会发生冲突
-                continue;
-
-            for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){ // 对每个其他的机器人
-                if (robotNum == RID)
-                    continue;
-
-                int _index = data::pathNums[robotNum];  // 选中机器人的当前路径
-                for (int _depth = STEP_DEPTH-1; _depth >= 0; --_depth){
-                    auto &_step = pathTree[_depth][_index];
-                    if (_step.SID == step.SID && _step.OID == _step.SID){
-                        conflict = true;
-                        goto out;
-                    }          // 如果发生冲突
-                    _index = _step.lastIndex;
-                }
-
-            }
+            valid = valid && step.valid;
             index = step.lastIndex;
+
         }
-        out :
-        available.emplace_back(!conflict);
+        valids.emplace_back(valid);
     }
     // 将权值加和
     for (int i = 0; i < width; ++i){
-        float weight = 0;
+        if (!valids[i]){
+            weights.emplace_back(0);
+            continue;
+        }
+        double weight = 0;
         int index = i;
         for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
             weight += pathTree[depth][index].value;
@@ -45,9 +94,14 @@ void selectPath(int RID){
         weights.emplace_back(weight);
     }
     // 选择
+    int pathIndex = 0;
     for (int i = 0; i < width; ++i)
-        if (available[i] && weights[i] < weights[data::pathNums[RID]])
-            data::pathNums[RID] = i;
+        if (weights[i] > weights[pathIndex])
+            pathIndex = i;
+    for (int depth = STEP_DEPTH-1; depth >= 0; --depth){
+        data::optedPaths[RID][depth] = pathIndex;
+        pathIndex = pathTree[depth][pathIndex].lastIndex;
+    }
 }
 void setPathTree(int RID) {
     robot &r = data::robots[RID];
@@ -65,23 +119,46 @@ void setPathTree(int RID) {
         // 如果需要从头构建
         if (depth == 0){
             auto steps = findStation(RID, r.item, 0, true);
+            double maxValue = 0;
             for (auto &step : steps)
+                maxValue = step.value > maxValue ? step.value : maxValue;
+
+            for (auto &step : steps){
+                if (step.value*FACTOR < maxValue)
+                    continue;
                 pathTree[depth].emplace_back(step);
+            }
         }
         else{
-            int lastIndex = 0, index = 0;
+            vector<Step> tmpSteps;
+            // 集中所有此步得到的steps
+            int lastIndex = 0;
             for (const auto &lastStep : pathTree[depth-1]){
                 int item = 0;
                 if (lastStep.OID == ONLY_BUY)
                     item = data::stations[lastStep.SID].type;
 
                 auto steps = findStation(lastStep.SID, item, lastIndex, false);
-                for (auto &step : steps){
-                    pathTree[depth].emplace_back(step);
-                    pathTree[depth-1][lastIndex].nextIndex.emplace_back(index);
-                    index++;
-                }
+                for (auto &step : steps)
+                    tmpSteps.emplace_back(step);
                 lastIndex++;
+            }
+            // 去除不合标准的step
+            double maxValue = 0;
+            for (auto &step : tmpSteps)
+                maxValue = step.value > maxValue ? step.value : maxValue;
+            auto size = tmpSteps.size();
+            for (int i = 0, index = 0; i < size; ++i){
+                if (tmpSteps[index].value*FACTOR < maxValue)
+                    tmpSteps.erase(tmpSteps.begin()+index);
+                else
+                    ++index;
+            }
+            // 写入
+            pathTree[depth] = tmpSteps;
+            for (int index = 0; index < pathTree[depth].size(); ++index){
+                lastIndex = pathTree[depth][index].lastIndex;
+                pathTree[depth-1][lastIndex].nextIndex.emplace_back(index);
             }
         }
     }
@@ -97,29 +174,37 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
         for(auto &s : data::stations)
             // 如果机器人空闲，寻找可以生产商品的工作台
             if (s.type <= 7){
-                pair<float, float> value = calculateValue(RID, s.id, ONLY_BUY, firstStep);
-                int timeStamp = (int)value.first+data::frame;
-                vector<int> newNext;
-                Step newStep{s.id, ONLY_BUY, timeStamp, value.second, lastIndex, newNext};
-                stations.emplace_back(newStep);
+                if (s.portAvailableTime[0] != -1){ //TODO: ?
+                    pair<double, double> value = calculateValue(RID, s.id, ONLY_BUY, firstStep);
+                    vector<int> newNext;
+                    Step newStep{true, s.id, ONLY_BUY,
+                                 (int)value.first, (int)value.first,
+                                 value.second, value.second,
+                                 lastIndex, newNext};
+                    stations.emplace_back(newStep);
+                }
             }
     }
     else{
         for (int &SID : data::receiveStationIDs[IID]) {
             auto &s = data::stations[SID];
             if (s.type == 8 || s.type == 9){
-                pair<float, float> value = calculateValue(RID, s.id, ONLY_SELL, firstStep);
-                int timeStamp = (int)value.first+data::frame;
+                pair<double, double> value = calculateValue(RID, s.id, ONLY_SELL, firstStep);
                 vector<int> newNext;
-                Step newStep{s.id, ONLY_SELL, timeStamp, value.second, lastIndex, newNext};
+                Step newStep{true, s.id, ONLY_SELL,
+                             (int)value.first,(int)value.first,
+                             value.second, value.second,
+                             lastIndex, newNext};
                 stations.emplace_back(newStep);
             }
 
             else{
-                pair<float, float> value = calculateValue(RID, s.id, IID, firstStep);
-                int timeStamp = (int)value.first+data::frame;
+                pair<double, double> value = calculateValue(RID, s.id, IID, firstStep);
                 vector<int> newNext;
-                Step newStep{s.id, IID, timeStamp, value.second, lastIndex, newNext};
+                Step newStep{true, s.id, IID,
+                             (int)value.first, (int)value.first,
+                             value.second, value.second,
+                             lastIndex, newNext};
                 stations.emplace_back(newStep);
             }
         }
@@ -127,9 +212,9 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep){
     // TODO: 算法优化
     return stations;
 }
-pair<float, float> calculateValue(int RID, int SID, int OID, bool firstStep){
+pair<double, double> calculateValue(int RID, int SID, int OID, bool firstStep){
     station &s = data::stations[SID];
-    pair<float, float> value;
+    pair<double, double> value;
     value.first = calculateTime(RID, SID, OID, firstStep);
     value.second = 0;
     if (OID == ONLY_BUY){
@@ -169,7 +254,7 @@ pair<float, float> calculateValue(int RID, int SID, int OID, bool firstStep){
         if (item != 7 && OID == ONLY_SELL)
             value.second /= 2;
     }
-    value.second = value.first/value.second;
+    value.second = value.second/value.first;
     return value;
 }
 
