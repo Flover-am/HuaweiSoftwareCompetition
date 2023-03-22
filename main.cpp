@@ -33,11 +33,13 @@ int main() {
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
             int optIndex = data::optedPaths[robotNum][0];
-            if (optIndex != -1){
+            if (optIndex >= 0){
                 Step &step = data::pathTrees[robotNum][0][optIndex];    //  如果有下一步规划，准备行动
-                navigate(robotNum, step.SID);
                 if (step.SID == data::robots[robotNum].stationID)       // 如果已经抵达目标,进行买卖命令
                     exchange(robotNum, step.SID, step.OID);
+                if (step.SID != data::robots[robotNum].stationID)
+                    navigate(robotNum, step.SID);
+
             }
         }
         puts("OK");
