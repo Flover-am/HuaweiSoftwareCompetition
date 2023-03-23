@@ -23,7 +23,7 @@ array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> data::destList;
 array<vector<int>, 8> data::receiveStationIDs;
 
 // Logger：日志工具
-Logger logger = *new Logger(false);
+Logger logger = Logger(false);
 
 void initMap();
 

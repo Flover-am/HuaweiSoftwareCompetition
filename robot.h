@@ -55,6 +55,7 @@ public:
         std::stringstream ss("");
         ss << "Robot " << ID << " \n\t: angleV:" << angleV << ", lineVX: " << lineVX << ", lineVY: " << lineVY
            << " ,pos_X: " << positionX << " , pos_Y: " << positionY;
+        return ss.str();
     }
 };
 
