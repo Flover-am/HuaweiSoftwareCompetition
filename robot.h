@@ -22,7 +22,7 @@
 #define PROD_SELL_6 6
 #define ONLY_SELL 7
 
-class robot {
+class Robot {
 public:
     int ID{-1};
     int stationID{-1};
@@ -44,8 +44,8 @@ public:
     float positionX;
     float positionY;
 
-    robot(int, float, float);
-    robot();
+    Robot(int, float, float);
+    Robot();
 };
 
 #endif //HUAWEISOFTWARECOMPETITION_ROBOT_H

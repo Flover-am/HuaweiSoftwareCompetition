@@ -1,20 +1,4 @@
 #include "main.h"
-
-void outputPathTree(){
-    int i = 0;
-    for (auto &pathTree : data::pathTrees){
-        logger.writeInfo("RID: " + to_string(i)+ ":");
-        for (auto &steps : pathTree){
-            string s;
-            for (auto &step : steps){
-                s += to_string(step.SID) + " ";
-            }
-            logger.writeInfo(s);
-        }
-        i++;
-    }
-}
-
 int main() {
 
     initMap();
@@ -37,15 +21,17 @@ int main() {
         logger.writeInfo("frame: "+to_string(data::frame) + "\n");
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
-            if (data::pathTrees[robotNum][STEP_DEPTH-1].empty())        //  如果树不完全，准备规划路线
+            if (data::pathTrees[robotNum][STEP_DEPTH-1].empty())//  如果树不完全，准备规划路线
                 setPathTree(robotNum);
 
+        logger.writeInfo("here");
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)       //  选择一条树中的路线
             selectPath(robotNum);
+        logger.writeInfo("here");
 
-        //outputNowPath();
-        //outputPathTree();
+        outputNowPath();
+        outputPathTree();
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
             int optIndex = data::optedPaths[robotNum][0];
@@ -53,7 +39,7 @@ int main() {
                 Step &step = data::pathTrees[robotNum][0][optIndex];    //  如果有下一步规划，准备行动
                 if (step.SID == data::robots[robotNum].stationID)  // 如果已经抵达目标,进行买卖命令
                     exchange(robotNum, step.SID, step.OID);
-                if (step.SID != data::robots[robotNum].stationID)
+                else
                     navigate(robotNum, step.SID);
 
             }
@@ -76,14 +62,11 @@ void initMap() {
             char symbol = line[j];
             if (symbol == '.')
                 continue;
-
-            float posX = (j+0.5)*TILE_SIZE, posY = (TILE_NUM-i-0.5)*TILE_SIZE;
-            if (symbol == 'A'){
+            float posX = TILE_SIZE*(j+0.5);
+            float posY = TILE_SIZE*(TILE_NUM-i-0.5);
+            if (symbol == 'A')
                 data::robots.emplace_back(robot++, posX, posY);
-                if (robot > ROBOT_NUM)
-                    logger.writeError("Robot more than 4.");
-            }
-            else if (isdigit(symbol))
+            else
                 data::stations.emplace_back(symbol-'0', workStation++, posX, posY);
         }
     }
@@ -118,6 +101,118 @@ void initMap() {
             data::receiveStationIDs[7].emplace_back(station.id);
         }
     }
+    for (auto &station1 : data::stations) {
+        float time = 0, value;
+        vector<float> tmpTime;
+        vector<float> tmpValue;
+        if (station1.type == 1){
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type == 4 || station2.type == 5)
+                    value = calculateValue(station2.id, PROD_SELL_1);
+                else if (station2.type == 9)
+                    value = calculateValue(station2.id, ONLY_SELL);
+                else
+                    value = 0;
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        else if (station1.type == 2){
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type == 4 || station2.type == 6)
+                    value = calculateValue(station2.id, PROD_SELL_2);
+                else if (station2.type == 9)
+                    value = calculateValue(station2.id, ONLY_SELL);
+                else
+                    value = 0;
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        else if (station1.type == 3){
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type == 5 || station2.type == 6)
+                    value = calculateValue(station2.id, PROD_SELL_3);
+                else if (station2.type == 9)
+                    value = calculateValue(station2.id, ONLY_SELL);
+                else
+                    value = 0;
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        else if (station1.type == 4){
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type == 7)
+                    value = calculateValue(station2.id, PROD_SELL_4);
+                else if (station2.type == 9)
+                    value = calculateValue(station2.id, ONLY_SELL);
+                else if (station2.type != 8)
+                    value = calculateValue(station2.id, ONLY_BUY);
+                else
+                    value = 0;
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        else if (station1.type == 5){
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type == 7)
+                    value = calculateValue(station2.id, PROD_SELL_5);
+                else if (station2.type == 9)
+                    value = calculateValue(station2.id, ONLY_SELL);
+                else if (station2.type != 8)
+                    value = calculateValue(station2.id, ONLY_BUY);
+                else
+                    value = 0;
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        else if (station1.type == 6){
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type == 7)
+                    value = calculateValue(station2.id, PROD_SELL_6);
+                else if (station2.type == 9)
+                    value = calculateValue(station2.id, ONLY_SELL);
+                else if (station2.type != 8)
+                    value = calculateValue(station2.id, ONLY_BUY);
+                else
+                    value = 0;
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        else if (station1.type == 7){
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type == 8 || station2.type == 9)
+                    value = calculateValue(station2.id, ONLY_SELL);
+                else
+                    value = calculateValue(station2.id, ONLY_BUY);
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        else{
+            for (auto &station2 : data::stations) {
+                time = calculateTime(station1.id, station2.id);
+                if (station2.type != 8 && station2.type != 9)
+                    value = calculateValue(station2.id, ONLY_BUY);
+                else
+                    value = 0;
+                tmpTime.emplace_back(time);
+                tmpValue.emplace_back(value);
+            }
+        }
+        data::values.emplace_back(tmpValue);
+    }
     puts("OK");
     fflush(stdout);
 }
@@ -134,34 +229,37 @@ void readMessage() {
         ss.clear();
         ss.str(line);
 
-        int number;
+        int number, frameRemain, proState;
         array<int ,8> matState{};
         ss >> skipInt >> skipFloat >> skipFloat;
-        ss >> s.timeRemain >> number >> s.proState;
-        for (auto &state : s.matState){
+        ss >> frameRemain >> number >> proState;
+        for (auto &state : matState){
             state = number%2;
             number /= 2;
         }
-        // 清空recvAskTime与portAvailableTime，等待本轮加载
-        vector<Ask> emptyAsk;
-        s.portRecvAskTime.fill(emptyAsk);
-        for (int i = 1; i < 8; i++)
-            s.portAvailableTime[i] = -1;
-        // 读入portAvailableTime[0]
-        if (s.proState == 1)
-            s.portAvailableTime[0] = 0;       // 当前可用
-        else if (s.timeRemain != -1)
-            s.portAvailableTime[0] = s.timeRemain;
-        else
-            s.portAvailableTime[0] = -1;
-    }
-    // 读入portAvailableTime[1-7]
-    for (int i = 1; i < 8; i++)
-        for (auto &SID : data::receiveStationIDs[i]){
-            auto &s = data::stations[SID];
-            if (s.matState[i] == 0)   // 当前可用
-                s.portAvailableTime[i] = 0;
+        // 清空condition, askRecved
+        deque<Ask> emptyAsk;
+        s.asksRecved = emptyAsk;
+        deque<int> emptyPort;
+        for (auto &frame : s.condition)
+            frame.fill(emptyPort);
+
+        // 读入condition, frameRemain
+        for (int i = 1; i < 8; ++i)
+            if (matState[i] == 1)
+                for (auto &frame : s.condition)
+                    frame[i].emplace_back(-1);
+        // 初始化产品数量
+        for (auto &frame : s.prosNum)
+            frame = proState;
+        for (int i = 0; i < UNAVAILABLE; ++i){
+            s.frameRemain[i] = frameRemain-i > 0 ? frameRemain-i : 0;
+            if (s.prosNum[i] == 0 && s.frameRemain[i] == 0){
+                s.prosNum[i] = 1;
+                s.frameRemain[i] = -1;
+            }
         }
+    }
     for (auto &r : data::robots) {
         getline(cin, line);
         ss.clear();
@@ -184,25 +282,15 @@ void readMessage() {
     getline(cin, line);
 }
 void refresh(){
-    // TODO: 可用时间帧数组
     // 刷新权值与时间戳
     for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
         for (auto &step : data::pathTrees[robotNum][0]){
-            int SID = step.SID, OID = step.OID;
-            pair<float, float> value = calculateValue(robotNum, SID, OID, true);
-            step.frame = step.frameSum = (int)value.first;
-            step.value = step.valueSum = value.second;
-        }
-        for (int depth = 1; depth < STEP_DEPTH; ++depth){
-            for (auto &step : data::pathTrees[robotNum][depth]){
-                auto &lastIndex = step.lastIndex;
-                auto &lastStep = data::pathTrees[robotNum][depth-1][lastIndex];
-                step.frameSum = step.frame+lastStep.frameSum;
-                step.valueSum = step.value+lastStep.valueSum;
-            }
+            int SID = step.SID;
+            float time = calculateNowTime(robotNum, SID);
+            step.frame = (int)(time);
         }
     }
-    // 从当前路径加载所有receiveAskTime
+    // 从当前路径加载所有asksRecved
     for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum){
         const auto &pathIndex = data::optedPaths[robotNum];
         if (pathIndex[STEP_DEPTH-1] == -1)
@@ -218,102 +306,77 @@ void refresh(){
                 continue;
 
             auto &station = data::stations[step.SID];
-            Ask ask{robotNum, step.frameSum, valueSum};
-            station.portRecvAskTime[step.OID].emplace_back(ask);
+            Ask ask{robotNum, step.OID, step.frameSum, valueSum};
+            station.asksRecved.emplace_back(ask);
         }
     }
-    // 根据receiveAskTime覆写portAvailableTime
-    for (auto &station : data::stations){
-        int recvTime = -1;
-        auto &ports = station.portAvailableTime;
-        auto &asks = station.portRecvAskTime;
 
-        if (station.type < 4){}
-        else if (station.type == 4){
-            if ((ports[1] == -1 || !asks[1].empty()) &&
-                (ports[2] == -1 || !asks[2].empty())){
-                if (!asks[1].empty())
-                    recvTime = asks[1][0].timeStamp > recvTime?
-                               asks[1][0].timeStamp : recvTime;
-                if (!asks[2].empty())
-                    recvTime = asks[2][0].timeStamp > recvTime?
-                               asks[2][0].timeStamp : recvTime;
-                if (ports[0] == -1){        //如果没有被阻塞
-                    if (ports[1] == -1) ports[1] = recvTime;
-                    if (ports[2] == -1) ports[2] = recvTime;
-                    ports[0] = recvTime+MEDIUM_TIME;
+    // 根据asksRecved覆写condition
+    for (auto &station : data::stations){
+        // 将所有asksRecved按时间戳排序
+        auto &asks = station.asksRecved;
+        sort(asks.begin(), asks.end(), [](auto a, auto b){return a.timeStamp<b.timeStamp;});
+        // 读入买请求
+        for (int askID = 0; askID < asks.size(); ++askID){
+            auto &ask = asks[askID];
+            auto &condition = station.condition;
+            if (ask.OID == ONLY_BUY)
+                for (int i = ask.timeStamp; i < UNAVAILABLE; ++i)
+                    condition[i][ask.OID].emplace_back(askID);
+        }
+        // 读取卖请求
+        for (int askID = 0; askID < asks.size(); ++askID){
+            auto &ask = asks[askID];
+            auto &condition = station.condition;
+            if (ask.OID == ONLY_BUY)
+                continue;
+            for (int i = ask.timeStamp; i < UNAVAILABLE; ++i)
+                condition[i][ask.OID].emplace_back(askID);
+
+            if (ask.OID < ONLY_SELL && ask.OID != ONLY_BUY){
+                int k1, k2, k3;
+                if (station.type == 4) {
+                    k1 = 1; k2 = 2; k3 = -1;
+                }
+                else if (station.type == 5) {
+                    k1 = 1; k2 = 3; k3 = -1;
+                }
+                else if (station.type == 6) {
+                    k1 = 2; k2 = 3; k3 = -1;
+                }
+                else {
+                    k1 = 4; k2 = 5; k3 = 6;
+                }
+                auto &Frame = condition[ask.timeStamp];
+                int startProTime = ask.timeStamp;
+                if ((!Frame[k1].empty() || ask.OID == k1) &&
+                    (!Frame[k2].empty() || ask.OID == k2) &&
+                    (k3 == -1 || !Frame[k3].empty() || ask.OID == k3)){
+                    for (; startProTime < UNAVAILABLE; ++startProTime)
+                        if (station.frameRemain[startProTime] == -1)
+                            break;
+
+                    for (int i = startProTime; i < UNAVAILABLE; ++i){
+                        condition[i][k1].pop_front();
+                        condition[i][k2].pop_front();
+                        if (k3 != -1)
+                            condition[i][k3].pop_front();
+                        station.frameRemain[i] =
+                                MEDIUM_TIME-(i-startProTime) > 0 ?
+                                MEDIUM_TIME-(i-startProTime) : 0;
+                    }
+                    int finishProTime = startProTime+MEDIUM_TIME;
+                    int prosNum = station.prosNum[finishProTime];
+                    int ordersNum = station.condition[finishProTime][0].size();
+
+                    if (prosNum <= ordersNum){
+                        for (int i = finishProTime; i < UNAVAILABLE; ++i){
+                            station.prosNum[i]++;
+                            station.frameRemain[i] = 0;
+                        }
+                    }
                 }
             }
         }
-        else if (station.type == 5){
-            if ((ports[1] == -1 || !asks[1].empty()) &&
-                (ports[3] == -1 || !asks[3].empty())){
-                if (!asks[1].empty())
-                    recvTime = asks[1][0].timeStamp > recvTime?
-                               asks[1][0].timeStamp : recvTime;
-                if (!asks[3].empty())
-                    recvTime = asks[3][0].timeStamp > recvTime?
-                               asks[3][0].timeStamp : recvTime;
-                if (ports[0] == -1){        //如果没有被阻塞
-                    if (ports[1] == -1) ports[1] = recvTime;
-                    if (ports[3] == -1) ports[3] = recvTime;
-                    ports[0] = recvTime+MEDIUM_TIME;
-                }
-            }
-        }
-        else if (station.type == 6){
-            if ((ports[2] == -1 || !asks[2].empty()) &&
-                (ports[3] == -1 || !asks[3].empty())){
-                if (!asks[2].empty())
-                    recvTime = asks[2][0].timeStamp > recvTime?
-                               asks[2][0].timeStamp : recvTime;
-                if (!asks[3].empty())
-                    recvTime = asks[3][0].timeStamp > recvTime?
-                               asks[3][0].timeStamp : recvTime;
-                if (ports[0] == -1){        //如果没有被阻塞
-                    if (ports[2] == -1) ports[2] = recvTime;
-                    if (ports[3] == -1) ports[3] = recvTime;
-                    ports[0] = recvTime+MEDIUM_TIME;
-                }
-            }
-        }
-        else if (station.type == 7){
-            if ((ports[4] == -1 || !asks[4].empty()) &&
-                (ports[5] == -1 || !asks[5].empty()) &&
-                (ports[6] == -1 || !asks[6].empty())){
-                if (!asks[4].empty())
-                    recvTime = asks[4][0].timeStamp > recvTime?
-                               asks[4][0].timeStamp : recvTime;
-                if (!asks[5].empty())
-                    recvTime = asks[5][0].timeStamp > recvTime?
-                               asks[5][0].timeStamp : recvTime;
-                if (!asks[6].empty())
-                    recvTime = asks[6][0].timeStamp > recvTime?
-                               asks[6][0].timeStamp : recvTime;
-                if (ports[0] == -1){        //如果没有被阻塞
-                    if (ports[4] == -1) ports[4] = recvTime;
-                    if (ports[5] == -1) ports[5] = recvTime;
-                    if (ports[6] == -1) ports[6] = recvTime;
-                    ports[0] = recvTime+LONG_TIME;
-                }
-            }
-        }
-    }
-}
-void outputNowPath(){
-    logger.writeInfo("frame: "+to_string(data::frame));
-    int p = 0;
-    for (auto &pathIndex : data::optedPaths){
-        string s;
-        int x = 0;
-        for (auto &stepIndex : pathIndex){
-            auto steps = data::pathTrees[p][x];
-            s += "SID: " + to_string(steps[stepIndex].SID) + "\t";
-            if (x == 2)
-                s += to_string(steps[stepIndex].valueSum) + " " + to_string(stepIndex);
-            ++x;
-        }
-        logger.writeInfo(s);
-        ++p;
     }
 }

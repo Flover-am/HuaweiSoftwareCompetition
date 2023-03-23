@@ -34,15 +34,19 @@ class data {
 public:
     static int frame;
     static int money;
-    static vector<robot> robots;
-    static vector<station> stations;
+    static vector<Robot> robots;
+    static vector<Station> stations;
+
     // 存放所有路径树
     static array<array<vector<Step>, STEP_DEPTH>, ROBOT_NUM> pathTrees;
     // 存放选择的路径号
     static array<array<int, STEP_DEPTH>, ROBOT_NUM> optedPaths;
+
     // 存放可以接受各种物品作为原料的所有工作台
     static array<vector<int>, 8> receiveStationIDs;
-
+    // 存放到每个工作台进行每种操作的权重
+    static vector<vector<float>> values;
+    static vector<vector<float>> times;
 };
 
 #endif //CODECRAFTSDK_DATA_H

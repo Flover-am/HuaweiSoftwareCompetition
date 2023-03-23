@@ -4,26 +4,25 @@
 #include "exchange.h"
 
 void exchange(int RID, int SID, int OID){
-    robot &r = data::robots[RID];
-    station &s = data::stations[SID];
+    Robot &r = data::robots[RID];
+    Station &s = data::stations[SID];
 
     bool success = false;               // 由于可能需要等待，需要判定是否操作成功
 
     if (OID != ONLY_BUY){
-        logger.writeInfo(to_string(s.portAvailableTime[r.item]));
-        if (s.portAvailableTime[r.item] == 0){
-            printf("sell %d\n", RID);   // 如果可卖，则卖出物品
+        // 当前帧对应端口的第一个请求不是-1号（没有物品，可卖）
+        if (s.condition[0][r.item][0] != -1){
+            printf("sell %d\n", RID);
             success = true;
         }
     }
     if (!success){
-        logger.writeInfo(to_string(s.portAvailableTime[0]));
-        if (s.portAvailableTime[0] == 0){
+        // 当前帧对应的生产物品量不为0，可买
+        if (s.prosNum[0] > 0){
             printf("buy %d\n", RID);    // 如果可买，则购进原料
             success = true;
         }
     }
-
     if (success)
         pushStep(RID);
 }
@@ -71,10 +70,23 @@ void pushStep(int RID){
         newTree[depth] = newSteps;
     }
 
+    // 计算valueSum
+    for (int depth = 1; depth < STEP_DEPTH; ++depth)
+        for (auto &step : newTree[depth])
+            step.valueSum -= newTree[0][0].value;
+
     for (int depth = 0; depth < STEP_DEPTH-1; ++depth)
         newTree[depth] = newTree[depth+1];
     newTree[STEP_DEPTH-1].clear();
     pathTree = newTree;
-
+    if (data::frame == 4730){
+        for (auto &steps : pathTree){
+            string s;
+            for (auto &step : steps){
+                s += to_string(step.SID) + " ";
+            }
+            logger.writeInfo(s);
+        }
+    }
 }
 #pragma clang diagnostic pop

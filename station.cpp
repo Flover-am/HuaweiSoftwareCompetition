@@ -1,10 +1,10 @@
 #include "station.h"
 
-station::station(int _type, int _id, float x, float y):
+Station::Station(int _type, int _id, float x, float y):
         type(_type), id(_id), positionX(x), positionY(y) {}
-station::station()=default;
+Station::Station()=default;
 
-string station::to_string(){
+string Station::to_string(){
     string res =
             "WorkStation[" + std::to_string(id) + "]" +
             "(1)type:" + std::to_string(type) + "   " +

@@ -1,12 +1,12 @@
 #include "robot.h"
 
-robot::robot(int _id, float x, float y) {
+Robot::Robot(int _id, float x, float y) {
     this->ID = _id;
     this->positionX = x;
     this->positionY = y;
 }
 
-robot::robot() {
+Robot::Robot() {
     this->positionX = 0;
     this->positionY = 0;
 }
