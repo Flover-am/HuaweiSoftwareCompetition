@@ -9,8 +9,8 @@ using namespace std;
 class Logger {
 private:
     string logger_file;
-    bool is_use{false};
-    string level{"error"};
+    bool is_use{true};
+    string level{"info"};
 
     void writeLog(const string &message, bool mod);
 

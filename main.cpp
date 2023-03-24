@@ -21,6 +21,7 @@ vector<robot> data::robots;
 vector<workStation> data::workStations;
 array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> data::destList;
 array<vector<int>, 8> data::receiveStationIDs;
+array<bool, 4> data::have_printed{false};
 
 // Logger：日志工具
 Logger logger = Logger(false);
@@ -72,11 +73,11 @@ int main() {
                     data::robots[robotNum].stationID)   // 如果有Destination且尚未抵达,进行移动命令
                     navigate(robotNum, data::destList[robotNum][0].first);
             }
+        data::have_printed = {false};
         out:
         puts("OK");
         fflush(stdout);
     }
-
 //
 //    ifstream prams("prams.in");
 //    float time = 0;
@@ -94,8 +95,6 @@ int main() {
 //    prams_re.close();
 //    ofstream score("score.out", ios::app);
 //    score << " " << time << " , " << dis_deta << " , " << data::money << "," << endl;
-
-
 
     return 0;
 }
