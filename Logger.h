@@ -3,11 +3,14 @@
 
 #include <string>
 #include "fstream"
+
 using namespace std;
 
 class Logger {
 private:
     string logger_file;
+    bool is_use{false};
+    string level{"error"};
 
     void writeLog(const string &message, bool mod);
 

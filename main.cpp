@@ -46,14 +46,14 @@ int main() {
     for (int frame = 0; frame < FRAME_NUM; ++frame) {
         readMessage();
         printf("%d\n", data::frame++);
-        logger.writeInfo(to_string(frame), false);
-        if (frame > 500 && avoidCollision::judgeColl()) {
-
-            logger.writeInfo(
-                    ": ----------------------------------------------------------------------------------------------------------------"
-                    " \n           frame:" + to_string(frame), false);
-            goto out;
-        }
+//        logger.writeInfo(to_string(frame), false);
+//        if (frame > 500 && avoidCollision::judgeColl()) {
+//
+//            logger.writeInfo(
+//                    ": ----------------------------------------------------------------------------------------------------------------"
+//                    " \n           frame:" + to_string(frame), false);
+//            goto out;
+//        }
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
             // 如果需要购买，检测之后是否存在新的出售冲突
             if (ONLY_BUY == data::destList[robotNum][STEP_DEPTH - 1].second) {
@@ -76,7 +76,27 @@ int main() {
         puts("OK");
         fflush(stdout);
     }
-    over:
+
+//
+//    ifstream prams("prams.in");
+//    float time = 0;
+//    float dis_deta = 0;
+//    prams >> time >> dis_deta;
+//    prams.close();
+//    if (dis_deta > 1.5) {
+//        dis_deta = 0.2;
+//        time += 0.1;
+//    } else {
+//        dis_deta += 0.1;
+//    }
+//    ofstream prams_re("prams.in", ios::out);
+//    prams_re << time << " " << dis_deta << endl;
+//    prams_re.close();
+//    ofstream score("score.out", ios::app);
+//    score << " " << time << " , " << dis_deta << " , " << data::money << "," << endl;
+
+
+
     return 0;
 }
 
