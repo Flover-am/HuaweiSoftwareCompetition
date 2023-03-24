@@ -2,14 +2,18 @@
 
 void selectPath(int RID){
     auto &pathTree = data::pathTrees[RID];
-    auto width = pathTree[STEP_DEPTH-1].size();
-
-
     vector<float> weights;
+
     // 对于每一条虚路径，检测其是否可用
     for (int depth = 0; depth < STEP_DEPTH; ++depth) {
         auto &steps = pathTree[depth];
         for (auto &step : steps) {
+            // 剪枝，减小计算量
+            if (depth > 0)
+                if (pathTree[depth-1][step.lastIndex].frameSum >= UNAVAILABLE){
+                    step.frameSum = UNAVAILABLE;
+                    continue;
+                }
             int portID = step.OID;
             int validFrame = UNAVAILABLE-1;
             auto &station = data::stations[step.SID];
@@ -29,15 +33,15 @@ void selectPath(int RID){
                         auto askIDs = Frame[portID];
                         auto size = askIDs.size();
 
-                        int askIndex = 0;
+                        int askIndex = 0; // 请求在condition.frame.port中的编号
                         for (int j = 0; j < size; ++j, ++askIndex){
                             auto askID = askIDs[askIndex];
                             if (askID == -1)
                                 goto out;
                             else{
-                                auto &ask = station.asksRecved[askID];
-                                // TODO：如果对应的请求就是本机器人发出的(如何判断？)，或者冲突比较中本步骤胜出
-                                if (ask.RID == RID || ask.value/ask.timeStamp < step.valueSum/step.frameSum){
+                                auto &ask = station.asks[askID];
+                                // TODO：如果对应的请求就是本虚步骤，或者冲突比较中本步骤胜出
+                                if (ask.RID <= RID && ask.timeStamp == step.frameSum || ask.timeStamp > step.frameSum){
                                     for (int frame = ask.timeStamp; frame <= validFrame; ++frame){
                                         auto &asksToErase = tmpCondition[frame][portID];
                                         asksToErase.erase(asksToErase.begin()+askIndex); //在tmpCondition中去除这个请求
@@ -51,24 +55,36 @@ void selectPath(int RID){
                     }
                 }   // 倒序寻找
             else { // portID == ONLY_BUY
-                // TODO: 没写完卖出冲突判定
-                /*int prosNum = station.prosNum[UNAVAILABLE-1];
+                int prosNum = station.prosNum[UNAVAILABLE-1];
                 // 如果最后一刻依然没有产品
                 if (prosNum == 0)
                     goto out;
                 auto &Frame = tmpCondition[UNAVAILABLE-1];
-                auto askIDs = Frame[portID];
-                // 如果发生冲突
-                if (prosNum <= Frame[portID].size()){
-                    for (auto &askID : askIDs){
-                        auto &ask = station.asksRecved[askID];
-                        if (ask.RID == RID && ask.timeStamp == step.frameSum ||
-                            ask.value < step.valueSum)
-                    }
-                }
+                auto &askIDs = Frame[portID];
 
-                */
+                // 将所有请求加载到asks，找到本步骤的优先级序号
+                Ask thisAsk{RID, step.OID, step.frameSum};
+                vector<Ask> asks{thisAsk};
+                for (auto askID: askIDs){
+                    auto &ask = station.asks[askID];
+                    if (ask.RID == RID && ask.timeStamp == step.frameSum)
+                        continue;
+                    asks.emplace_back(ask);
+                }
+                sort(asks.begin(), asks.end(), [](auto a, auto b){return a.timeStamp < b.timeStamp;});
+
+                int rank = 0;
+                for (; rank < asks.size(); ++rank){
+                    auto &ask = asks[rank];
+                    if (ask.RID == RID && ask.timeStamp == step.frameSum)
+                        break;
+                }
+                // 如果优先级不足，退出
+                for (; validFrame >= 0; validFrame--)
+                    if (station.prosNum[validFrame] <= rank)
+                        goto out;
             } // 倒序寻找
+            // 计算frameSum
             out :
             int lastFrameSum = step.frame;
             if (depth > 0){
@@ -79,15 +95,8 @@ void selectPath(int RID){
                             lastFrameSum : validFrame+1;
         }
     }
-    // 确定frameSum
-    for (int depth = 1; depth < STEP_DEPTH; ++depth)
-        for (int i = 0; i < pathTree[depth].size(); ++i){
-            int lastIndex = pathTree[depth][i].lastIndex;
-            int sum = pathTree[depth-1][lastIndex].frameSum+pathTree[depth][i].frame;
-            pathTree[depth][i].frameSum = pathTree[depth][i].frameSum > sum?
-                                          pathTree[depth][i].frameSum : sum;
-        }
 
+    auto width = pathTree[STEP_DEPTH-1].size();
     // 计算weight
     for (int i = 0; i < width; ++i) {
         auto &lastStep = pathTree[STEP_DEPTH-1][i];
@@ -96,6 +105,7 @@ void selectPath(int RID){
         else
             weights.emplace_back(lastStep.valueSum/lastStep.frameSum);
     }
+
 
     // 选择
     int pathIndex = 0;
@@ -129,6 +139,7 @@ void setPathTree(int RID) {
                 pathTree[depth].emplace_back(step);
         }
         else{
+
             int lastIndex = 0, index = 0;
             for (const auto &lastStep : pathTree[depth-1]){
                 int item = 0;
@@ -183,8 +194,11 @@ vector<Step> findStation(int RID, int IID, int lastIndex, bool firstStep) {
             }
     }
     else{
+
         for (int &SID : data::receiveStationIDs[IID]) {
+
             auto &s = data::stations[SID];
+
             if (s.type == 8 || s.type == 9){
                 float time, value;
                 if (!firstStep){

@@ -1,4 +1,6 @@
 #include "main.h"
+#include <time.h>
+
 int main() {
 
     initMap();
@@ -15,23 +17,30 @@ int main() {
 
 
     for (int frame = 1; frame <= FRAME_NUM; ++frame) {
-        readMessage();  // 清空portRecvAskTime, 从输入加载portAvailableTime
-        refresh();      // 从optedPath加载portRecvAskTime, 覆写portAvailableTime
+
+        time_t start ,end;
+        double cost;
+        time(&start);
+
+        readMessage();  // 清空asks, 从输入加载condition
+        refresh();      // 从optedPath加载asks, 覆写condition
         printf("%d\n", data::frame);
         logger.writeInfo("frame: "+to_string(data::frame) + "\n");
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
             if (data::pathTrees[robotNum][STEP_DEPTH-1].empty())//  如果树不完全，准备规划路线
                 setPathTree(robotNum);
-
-        logger.writeInfo("here");
+        outputPathTree();
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)       //  选择一条树中的路线
             selectPath(robotNum);
-        logger.writeInfo("here");
+        logger.writeInfo("selected");
 
         outputNowPath();
-        outputPathTree();
+        time(&end);
+        cost=difftime(end,start);
+        logger.writeInfo(to_string(cost));
+
 
         for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
             int optIndex = data::optedPaths[robotNum][0];
@@ -211,6 +220,7 @@ void initMap() {
                 tmpValue.emplace_back(value);
             }
         }
+        data::times.emplace_back(tmpTime);
         data::values.emplace_back(tmpValue);
     }
     puts("OK");
@@ -237,9 +247,9 @@ void readMessage() {
             state = number%2;
             number /= 2;
         }
-        // 清空condition, askRecved
+        // 清空condition, asks
         deque<Ask> emptyAsk;
-        s.asksRecved = emptyAsk;
+        s.asks = emptyAsk;
         deque<int> emptyPort;
         for (auto &frame : s.condition)
             frame.fill(emptyPort);
@@ -252,13 +262,20 @@ void readMessage() {
         // 初始化产品数量
         for (auto &frame : s.prosNum)
             frame = proState;
-        for (int i = 0; i < UNAVAILABLE; ++i){
-            s.frameRemain[i] = frameRemain-i > 0 ? frameRemain-i : 0;
-            if (s.prosNum[i] == 0 && s.frameRemain[i] == 0){
-                s.prosNum[i] = 1;
-                s.frameRemain[i] = -1;
+        if (frameRemain != -1){
+            for (int i = 0; i < UNAVAILABLE; ++i){
+                s.frameRemain[i] = frameRemain-i > 0 ? frameRemain-i : 0;
+                if (s.prosNum[i] == 0 && s.frameRemain[i] == 0){
+                    s.prosNum[i] = 1;
+                    if (s.type >= 4)
+                        s.frameRemain[i] = -1;
+                    else
+                        s.frameRemain[i] = frameRemain+SHORT_TIME-i > 0?
+                                           frameRemain+SHORT_TIME-i : 0;
+                }
             }
         }
+
     }
     for (auto &r : data::robots) {
         getline(cin, line);
@@ -307,32 +324,25 @@ void refresh(){
 
             auto &station = data::stations[step.SID];
             Ask ask{robotNum, step.OID, step.frameSum, valueSum};
-            station.asksRecved.emplace_back(ask);
+            station.asks.emplace_back(ask);
         }
     }
 
-    // 根据asksRecved覆写condition
+    // 根据asks覆写condition
     for (auto &station : data::stations){
-        // 将所有asksRecved按时间戳排序
-        auto &asks = station.asksRecved;
-        sort(asks.begin(), asks.end(), [](auto a, auto b){return a.timeStamp<b.timeStamp;});
-        // 读入买请求
-        for (int askID = 0; askID < asks.size(); ++askID){
-            auto &ask = asks[askID];
-            auto &condition = station.condition;
-            if (ask.OID == ONLY_BUY)
-                for (int i = ask.timeStamp; i < UNAVAILABLE; ++i)
-                    condition[i][ask.OID].emplace_back(askID);
-        }
+        // 将所有asks按时间戳排序
+        auto &asks = station.asks;
+        sort(asks.begin(), asks.end(), [](auto a, auto b){return a.timeStamp < b.timeStamp;});
         // 读取卖请求
         for (int askID = 0; askID < asks.size(); ++askID){
             auto &ask = asks[askID];
             auto &condition = station.condition;
-            if (ask.OID == ONLY_BUY)
+            if (ask.OID == ONLY_SELL)
                 continue;
             for (int i = ask.timeStamp; i < UNAVAILABLE; ++i)
                 condition[i][ask.OID].emplace_back(askID);
 
+            auto &Frame = condition[ask.timeStamp];
             if (ask.OID < ONLY_SELL && ask.OID != ONLY_BUY){
                 int k1, k2, k3;
                 if (station.type == 4) {
@@ -347,11 +357,10 @@ void refresh(){
                 else {
                     k1 = 4; k2 = 5; k3 = 6;
                 }
-                auto &Frame = condition[ask.timeStamp];
-                int startProTime = ask.timeStamp;
                 if ((!Frame[k1].empty() || ask.OID == k1) &&
                     (!Frame[k2].empty() || ask.OID == k2) &&
                     (k3 == -1 || !Frame[k3].empty() || ask.OID == k3)){
+                    int startProTime = ask.timeStamp;
                     for (; startProTime < UNAVAILABLE; ++startProTime)
                         if (station.frameRemain[startProTime] == -1)
                             break;
@@ -373,6 +382,32 @@ void refresh(){
                         for (int i = finishProTime; i < UNAVAILABLE; ++i){
                             station.prosNum[i]++;
                             station.frameRemain[i] = 0;
+                        }
+                    }
+                }
+            }
+            else {
+                auto prosNum = station.prosNum[ask.timeStamp];
+
+                if (Frame[ask.OID].size() == prosNum){
+                    int frameRemain = station.frameRemain[ask.timeStamp];
+                    if (frameRemain != -1){
+                        int producedTime = ask.timeStamp;
+                        for (; producedTime < UNAVAILABLE; ++producedTime)
+                            if (station.frameRemain[producedTime] == 0)
+                                break;
+                        for (int time = producedTime; time < UNAVAILABLE; ++time){
+                            if (station.type < 4){
+                                station.frameRemain[time] = SHORT_TIME-(time-producedTime) > 0?
+                                                            SHORT_TIME-(time-producedTime) : 0;
+                            }
+                            else if (station.type < 7)
+                                station.frameRemain[time] = MEDIUM_TIME-(time-producedTime) > 0?
+                                                            MEDIUM_TIME-(time-producedTime) : 0;
+                            else
+                                station.frameRemain[time] = LONG_TIME-(time-producedTime) > 0?
+                                                            LONG_TIME-(time-producedTime) : 0;
+                            station.prosNum[time]++;
                         }
                     }
                 }

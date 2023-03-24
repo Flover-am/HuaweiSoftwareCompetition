@@ -27,8 +27,8 @@ public:
     const float positionX{0.0};
     const float positionY{0.0};
 
-    // 各个工作台将接收到对应机器人买卖请求
-    deque<Ask> asksRecved;
+    // 各个工作台将接收到请求
+    deque<Ask> asks;
     // 各个端口在各个时间戳的请求状态，每个vector元素是请求编号
     array<array<deque<int>, 8>, UNAVAILABLE> condition;
     // 工作台剩余工作时间
