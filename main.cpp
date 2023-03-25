@@ -47,32 +47,39 @@ int main() {
     for (int frame = 0; frame < FRAME_NUM; ++frame) {
         readMessage();
         printf("%d\n", data::frame++);
-//        logger.writeInfo(to_string(frame), false);
-//        if (frame > 500 && avoidCollision::judgeColl()) {
-//
-//            logger.writeInfo(
-//                    ": ----------------------------------------------------------------------------------------------------------------"
-//                    " \n           frame:" + to_string(frame), false);
-//            goto out;
-//        }
-        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
             // 如果需要购买，检测之后是否存在新的出售冲突
+
             if (ONLY_BUY == data::destList[robotNum][STEP_DEPTH - 1].second) {
                 auto SID = data::destList[robotNum][STEP_DEPTH - 1].first;
                 detectConflict(robotNum, data::workStations[SID].type);
             }
+        }
 
-        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
-            if (data::destList[robotNum][STEP_DEPTH - 1].first < 0)      //  如果规划不完全，准备规划路线
+
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
+            if (data::destList[robotNum][STEP_DEPTH - 1].first < 0) {
                 setDestination(robotNum);
-        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum)
+            }     //  如果规划不完全，准备规划路线
+
+        }
+
+
+        for (int robotNum = 0; robotNum < ROBOT_NUM; ++robotNum) {
             if (data::destList[robotNum][0].first >= 0) {               //  如果有下一步规划，准备行动
-                if (data::destList[robotNum][0].first == data::robots[robotNum].stationID)   // 如果已经抵达目标,进行买卖命令
+                if (data::destList[robotNum][0].first == data::robots[robotNum].stationID) {
                     exchange(robotNum, data::destList[robotNum][0]);
+                    navigate(robotNum, data::destList[robotNum][0].first, true);
+                }   // 如果已经抵达目标,进行买卖命令
+
                 if (data::destList[robotNum][0].first !=
                     data::robots[robotNum].stationID)   // 如果有Destination且尚未抵达,进行移动命令
                     navigate(robotNum, data::destList[robotNum][0].first);
+            } else {
+                logger.writeError(to_string(data::frame) + "  No Des!");
             }
+        }
+
         data::have_printed = {false};
         out:
         puts("OK");

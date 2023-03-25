@@ -1,7 +1,14 @@
 #include "navigate.h"
 #include "avoidCollision.h"
 
-void navigate(int RID, int SID) {
+void navigate(int RID, int SID, bool no) {
+
+    if (no) {
+        printf("rotate %d 0\n", RID);
+        printf("forward %d 0\n", RID);
+        data::have_printed[RID] = true;
+        logger.writeInfo("print" + to_string(RID) + " _A");
+    }
     if (data::frame > 500 && data::frame < 600) {
         logger.writeInfo("");
         logger.writeInfo("frame:=" + to_string(data::frame));

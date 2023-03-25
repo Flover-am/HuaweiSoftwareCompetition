@@ -1,1 +1,1 @@
-"./robot/Robot.exe" cmake-build-debug/main.exe -f  -m maps\2.txt
+"./robot/Robot.exe" cmake-build-debug/main.exe -f -s 12311 -m maps\4.txt

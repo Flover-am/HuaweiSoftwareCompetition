@@ -170,7 +170,7 @@ public:
             robot rb = data::robots[r_b_index];
 
 //                ifstream prams("prams.in");
-            float time = 1;
+            float time = 0.4;
             float dis_deta = 1.3;
 //                prams >> time >> dis_deta;
 //                prams.close();

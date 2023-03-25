@@ -9,7 +9,7 @@
 
 extern Logger logger;
 
-void navigate(int, int);
+void navigate(int, int,bool= false);
 float calculateTime(int, pair<int, int>, bool);
 
 #endif //CODECRAFTSDK_NAVIGATE_H
