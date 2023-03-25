@@ -29,9 +29,15 @@ public:
     static array<array<pair<int, int>, STEP_DEPTH>, ROBOT_NUM> destList;
     // 存放所有路径，int1.workStation号码 int2.对应操作
     static array<vector<int>, 8> receiveStationIDs;
-    static array<bool, 4> have_printed;
-
     // 存放可以接受各种物品作为原料的所有工作台
+
+    static array<bool, 4> have_printed;
+    // 每条路径 买卖  的材料
+    static vector<vector<int>> materialEachTypeWay;
+    // 每条路径的距离
+    static vector<vector<float>> distance;
+    // 每条路径的权重
+    static vector<vector<vector<float>>> weight;
 };
 
 #endif //CODECRAFTSDK_DATA_H
