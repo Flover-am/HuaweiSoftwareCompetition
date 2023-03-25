@@ -30,6 +30,7 @@ public:
     // 存放所有路径，int1.workStation号码 int2.对应操作
     static array<vector<int>, 8> receiveStationIDs;
     static array<bool, 4> have_printed;
+
     // 存放可以接受各种物品作为原料的所有工作台
 };
 
